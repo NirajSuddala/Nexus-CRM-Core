@@ -181,6 +181,10 @@ export const createDeal = async (
         updatedAt: new Date().toISOString(),
       };
       demoDeals.push(newDeal);
+      // Update demoDealsByStage for Kanban view
+      if (demoDealsByStage[newDeal.stage]) {
+        demoDealsByStage[newDeal.stage].unshift(newDeal);
+      }
       res.status(201).json(newDeal);
       return;
     }
@@ -230,6 +234,7 @@ export const updateDeal = async (
       if (index === -1) {
         throw new AppError('Deal not found', 404);
       }
+      const oldStage = demoDeals[index].stage;
       demoDeals[index] = {
         ...demoDeals[index],
         ...req.body,
@@ -237,6 +242,19 @@ export const updateDeal = async (
         contact: req.body.contactId ? demoContacts.find(c => c.id === req.body.contactId) : demoDeals[index].contact,
         updatedAt: new Date().toISOString()
       };
+      // Update demoDealsByStage if stage changed
+      if (req.body.stage && req.body.stage !== oldStage) {
+        demoDealsByStage[oldStage] = demoDealsByStage[oldStage].filter(d => d.id !== req.params.id);
+        if (demoDealsByStage[req.body.stage]) {
+          demoDealsByStage[req.body.stage].unshift(demoDeals[index]);
+        }
+      } else {
+        // Update the deal in its current stage
+        const stageIndex = demoDealsByStage[oldStage].findIndex(d => d.id === req.params.id);
+        if (stageIndex !== -1) {
+          demoDealsByStage[oldStage][stageIndex] = demoDeals[index];
+        }
+      }
       res.json(demoDeals[index]);
       return;
     }
@@ -300,6 +318,11 @@ export const updateDealStage = async (
         stage: req.body.stage,
         updatedAt: new Date().toISOString()
       };
+      // Update demoDealsByStage - remove from old stage and add to new stage
+      demoDealsByStage[previousStage] = demoDealsByStage[previousStage].filter(d => d.id !== req.params.id);
+      if (demoDealsByStage[req.body.stage]) {
+        demoDealsByStage[req.body.stage].unshift(demoDeals[index]);
+      }
       res.json(demoDeals[index]);
       return;
     }
@@ -357,7 +380,12 @@ export const deleteDeal = async (
       if (index === -1) {
         throw new AppError('Deal not found', 404);
       }
+      const dealStage = demoDeals[index].stage;
       demoDeals.splice(index, 1);
+      // Remove from demoDealsByStage as well
+      if (demoDealsByStage[dealStage]) {
+        demoDealsByStage[dealStage] = demoDealsByStage[dealStage].filter(d => d.id !== req.params.id);
+      }
       res.status(204).send();
       return;
     }
