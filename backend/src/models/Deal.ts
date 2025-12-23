@@ -1,32 +1,36 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
-export type DealStage = 'discovery' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
-
 interface DealAttributes {
   id: string;
+  name: string;
   companyId: string | null;
   contactId: string | null;
-  name: string;
+  pipelineId: string;
+  stageId: string;
   amount: number | null;
-  stage: DealStage;
-  closeDate: Date | null;
-  probability: number;
+  probability: number | null;
+  expectedCloseDate: Date | null;
+  properties: Record<string, any> | null;
+  closedAt: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface DealCreationAttributes extends Optional<DealAttributes, 'id' | 'companyId' | 'contactId' | 'amount' | 'closeDate' | 'probability' | 'createdAt' | 'updatedAt'> {}
+interface DealCreationAttributes extends Optional<DealAttributes, 'id' | 'companyId' | 'contactId' | 'amount' | 'probability' | 'expectedCloseDate' | 'properties' | 'closedAt' | 'createdAt' | 'updatedAt'> {}
 
 class Deal extends Model<DealAttributes, DealCreationAttributes> implements DealAttributes {
   public id!: string;
+  public name!: string;
   public companyId!: string | null;
   public contactId!: string | null;
-  public name!: string;
+  public pipelineId!: string;
+  public stageId!: string;
   public amount!: number | null;
-  public stage!: DealStage;
-  public closeDate!: Date | null;
-  public probability!: number;
+  public probability!: number | null;
+  public expectedCloseDate!: Date | null;
+  public properties!: Record<string, any> | null;
+  public closedAt!: Date | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -37,6 +41,10 @@ Deal.init(
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
     },
     companyId: {
       type: DataTypes.UUID,
@@ -56,32 +64,49 @@ Deal.init(
         key: 'id',
       },
     },
-    name: {
-      type: DataTypes.STRING(255),
+    pipelineId: {
+      type: DataTypes.UUID,
       allowNull: false,
+      field: 'pipeline_id',
+      references: {
+        model: 'pipelines',
+        key: 'id',
+      },
+    },
+    stageId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      field: 'stage_id',
+      references: {
+        model: 'pipeline_stages',
+        key: 'id',
+      },
     },
     amount: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: true,
     },
-    stage: {
-      type: DataTypes.ENUM('discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost'),
-      allowNull: false,
-      defaultValue: 'discovery',
-    },
-    closeDate: {
-      type: DataTypes.DATEONLY,
-      allowNull: true,
-      field: 'close_date',
-    },
     probability: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
       validate: {
         min: 0,
         max: 100,
       },
+    },
+    expectedCloseDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'expected_close_date',
+    },
+    properties: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
+    closedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'closed_at',
     },
   },
   {

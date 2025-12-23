@@ -767,7 +767,7 @@ const SalesForecastReport: React.FC = () => {
                           <td className="py-3 px-4 font-medium text-slate-900">{deal.name}</td>
                           <td className="py-3 px-4 text-slate-600">{deal.company?.name || '-'}</td>
                           <td className="py-3 px-4">
-                            <Badge variant="secondary" className="capitalize">
+                            <Badge variant="default" className="capitalize">
                               {deal.stage.replace('_', ' ')}
                             </Badge>
                           </td>
@@ -1128,7 +1128,7 @@ const ContactsByCompanyReport: React.FC = () => {
                       </div>
                     </td>
                     <td className="text-right py-3 px-4">
-                      <Badge variant="secondary">{item.contactCount}</Badge>
+                      <Badge variant="default">{item.contactCount}</Badge>
                     </td>
                   </tr>
                 ))}
@@ -1329,8 +1329,8 @@ const ActivityLogReport: React.FC = () => {
     fetchData();
   }, [dateRange, entityType, page]);
 
-  const handleExport = (format: 'csv' | 'pdf') => {
-    if (format === 'csv') {
+  const handleExport = (exportFormat: 'csv' | 'pdf') => {
+    if (exportFormat === 'csv') {
       const csv = [
         ['Date', 'Entity Type', 'Action', 'Description'],
         ...data.map((item: any) => [
@@ -1349,11 +1349,11 @@ const ActivityLogReport: React.FC = () => {
     }
   };
 
-  const getActionBadgeVariant = (action: string) => {
+  const getActionBadgeVariant = (action: string): 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' => {
     if (action.includes('create')) return 'success';
     if (action.includes('update')) return 'warning';
     if (action.includes('delete')) return 'danger';
-    return 'secondary';
+    return 'default';
   };
 
   return (
@@ -1403,7 +1403,7 @@ const ActivityLogReport: React.FC = () => {
                       {format(new Date(item.createdAt), 'MMM d, yyyy HH:mm')}
                     </td>
                     <td className="py-3 px-4">
-                      <Badge variant="secondary" className="capitalize">{item.entityType}</Badge>
+                      <Badge variant="default" className="capitalize">{item.entityType}</Badge>
                     </td>
                     <td className="py-3 px-4">
                       <Badge variant={getActionBadgeVariant(item.action)}>{item.action}</Badge>

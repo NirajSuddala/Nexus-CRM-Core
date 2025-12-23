@@ -1,14 +1,13 @@
-import crypto from 'crypto';
 import { User } from '../models';
 import { generateToken, generateRefreshToken } from '../middleware/auth';
-import { sendPasswordResetEmail } from '../config/email';
 import { AppError } from '../middleware/errorHandler';
 import { UserRole } from '../models/User';
 
 interface RegisterData {
   email: string;
   password: string;
-  fullName: string;
+  firstName?: string;
+  lastName?: string;
   role?: UserRole;
 }
 
@@ -38,8 +37,9 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
   const user = await User.create({
     email: data.email,
     passwordHash: data.password,
-    fullName: data.fullName,
-    role: data.role || 'sales_rep',
+    firstName: data.firstName || null,
+    lastName: data.lastName || null,
+    role: data.role || 'agent',
   });
 
   const token = generateToken({ id: user.id, email: user.email, role: user.role });
@@ -93,41 +93,28 @@ export const forgotPassword = async (email: string): Promise<void> => {
     return;
   }
 
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-  await user.update({
-    resetToken,
-    resetTokenExpires,
-  });
-
-  try {
-    await sendPasswordResetEmail(email, resetToken);
-  } catch (error) {
-    console.error('Failed to send password reset email:', error);
-    // Don't throw error to prevent email enumeration
-  }
+  // Password reset requires additional User model fields (resetToken, resetTokenExpires)
+  // For now, just log the attempt - implement full reset when DB schema is updated
+  console.log(`Password reset requested for: ${email}`);
 };
 
-export const resetPassword = async (token: string, newPassword: string): Promise<void> => {
-  const user = await User.findOne({
-    where: {
-      resetToken: token,
-    },
-  });
-
-  if (!user || !user.resetTokenExpires || user.resetTokenExpires < new Date()) {
-    throw new AppError('Invalid or expired reset token', 400);
-  }
-
-  await user.update({
-    passwordHash: newPassword,
-    resetToken: null,
-    resetTokenExpires: null,
-  });
+export const resetPassword = async (_token: string, _newPassword: string): Promise<void> => {
+  // Password reset requires additional User model fields (resetToken, resetTokenExpires)
+  // For now, throw error - implement when DB schema is updated
+  throw new AppError('Password reset is not yet implemented', 501);
 };
 
-export const getCurrentUser = async (userId: string) => {
+export const getCurrentUser = async (userId: string): Promise<{
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: UserRole;
+  companyId: string | null;
+  fullName: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}> => {
   const user = await User.findByPk(userId);
 
   if (!user) {

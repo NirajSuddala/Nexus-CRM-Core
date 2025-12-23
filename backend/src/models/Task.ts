@@ -1,35 +1,39 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
-export type TaskPriority = 'high' | 'medium' | 'low';
-export type TaskStatus = 'todo' | 'in_progress' | 'completed';
+export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskStatus = 'open' | 'in_progress' | 'completed';
 
 interface TaskAttributes {
   id: string;
-  contactId: string | null;
+  title: string;
+  description: string | null;
   dealId: string | null;
+  contactId: string | null;
   assignedTo: string | null;
-  name: string;
+  createdBy: string;
   dueDate: Date | null;
   priority: TaskPriority;
   status: TaskStatus;
-  description: string | null;
+  completedAt: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface TaskCreationAttributes extends Optional<TaskAttributes, 'id' | 'contactId' | 'dealId' | 'assignedTo' | 'dueDate' | 'description' | 'createdAt' | 'updatedAt'> {}
+interface TaskCreationAttributes extends Optional<TaskAttributes, 'id' | 'description' | 'dealId' | 'contactId' | 'assignedTo' | 'dueDate' | 'completedAt' | 'createdAt' | 'updatedAt'> {}
 
 class Task extends Model<TaskAttributes, TaskCreationAttributes> implements TaskAttributes {
   public id!: string;
-  public contactId!: string | null;
+  public title!: string;
+  public description!: string | null;
   public dealId!: string | null;
+  public contactId!: string | null;
   public assignedTo!: string | null;
-  public name!: string;
+  public createdBy!: string;
   public dueDate!: Date | null;
   public priority!: TaskPriority;
   public status!: TaskStatus;
-  public description!: string | null;
+  public completedAt!: Date | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -41,14 +45,13 @@ Task.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    contactId: {
-      type: DataTypes.UUID,
+    title: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
       allowNull: true,
-      field: 'contact_id',
-      references: {
-        model: 'contacts',
-        key: 'id',
-      },
     },
     dealId: {
       type: DataTypes.UUID,
@@ -56,6 +59,15 @@ Task.init(
       field: 'deal_id',
       references: {
         model: 'deals',
+        key: 'id',
+      },
+    },
+    contactId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'contact_id',
+      references: {
+        model: 'contacts',
         key: 'id',
       },
     },
@@ -68,28 +80,40 @@ Task.init(
         key: 'id',
       },
     },
-    name: {
-      type: DataTypes.STRING(255),
+    createdBy: {
+      type: DataTypes.UUID,
       allowNull: false,
+      field: 'created_by',
+      references: {
+        model: 'users',
+        key: 'id',
+      },
     },
     dueDate: {
-      type: DataTypes.DATEONLY,
+      type: DataTypes.DATE,
       allowNull: true,
       field: 'due_date',
     },
     priority: {
-      type: DataTypes.ENUM('high', 'medium', 'low'),
+      type: DataTypes.STRING(20),
       allowNull: false,
       defaultValue: 'medium',
+      validate: {
+        isIn: [['low', 'medium', 'high']],
+      },
     },
     status: {
-      type: DataTypes.ENUM('todo', 'in_progress', 'completed'),
+      type: DataTypes.STRING(20),
       allowNull: false,
-      defaultValue: 'todo',
+      defaultValue: 'open',
+      validate: {
+        isIn: [['open', 'in_progress', 'completed']],
+      },
     },
-    description: {
-      type: DataTypes.TEXT,
+    completedAt: {
+      type: DataTypes.DATE,
       allowNull: true,
+      field: 'completed_at',
     },
   },
   {

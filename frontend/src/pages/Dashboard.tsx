@@ -303,8 +303,8 @@ const Dashboard: React.FC = () => {
                       <p className="text-sm font-medium text-slate-900">
                         {deal.amount ? formatCurrency(deal.amount) : '-'}
                       </p>
-                      <Badge variant={getDealStageBadgeVariant(deal.stage)} size="sm">
-                        {deal.stage.replace('_', ' ')}
+                      <Badge variant={getDealStageBadgeVariant(typeof deal.stage === 'string' ? deal.stage : deal.stage?.name || '')} size="sm">
+                        {(typeof deal.stage === 'string' ? deal.stage : deal.stage?.name || 'Unknown').replace('_', ' ')}
                       </Badge>
                     </div>
                   </Link>

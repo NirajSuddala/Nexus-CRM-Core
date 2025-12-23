@@ -146,6 +146,156 @@ export const searchApi = {
     api.get('/search', { params: { q, type, limit } }),
 };
 
+// Projects API
+export const projectsApi = {
+  getAll: (params?: { page?: number; limit?: number; search?: string; status?: string; companyId?: string }) =>
+    api.get('/projects', { params }),
+  getOne: (id: string) =>
+    api.get(`/projects/${id}`),
+  create: (data: any) =>
+    api.post('/projects', data),
+  update: (id: string, data: any) =>
+    api.put(`/projects/${id}`, data),
+  delete: (id: string) =>
+    api.delete(`/projects/${id}`),
+  getMilestones: (projectId: string) =>
+    api.get(`/projects/${projectId}/milestones`),
+  createMilestone: (projectId: string, data: any) =>
+    api.post(`/projects/${projectId}/milestones`, data),
+  updateMilestone: (projectId: string, milestoneId: string, data: any) =>
+    api.put(`/projects/${projectId}/milestones/${milestoneId}`, data),
+  deleteMilestone: (projectId: string, milestoneId: string) =>
+    api.delete(`/projects/${projectId}/milestones/${milestoneId}`),
+};
+
+// Tickets API
+export const ticketsApi = {
+  getAll: (params?: { page?: number; limit?: number; search?: string; status?: string; priority?: string; type?: string; companyId?: string; contactId?: string }) =>
+    api.get('/tickets', { params }),
+  getStats: () =>
+    api.get('/tickets/stats'),
+  getOne: (id: string) =>
+    api.get(`/tickets/${id}`),
+  create: (data: any) =>
+    api.post('/tickets', data),
+  update: (id: string, data: any) =>
+    api.put(`/tickets/${id}`, data),
+  delete: (id: string) =>
+    api.delete(`/tickets/${id}`),
+};
+
+// Surveys API
+export const surveysApi = {
+  getAll: (params?: { page?: number; limit?: number; type?: string; status?: string }) =>
+    api.get('/surveys', { params }),
+  getOne: (id: string) =>
+    api.get(`/surveys/${id}`),
+  create: (data: any) =>
+    api.post('/surveys', data),
+  update: (id: string, data: any) =>
+    api.put(`/surveys/${id}`, data),
+  delete: (id: string) =>
+    api.delete(`/surveys/${id}`),
+  getResponses: (surveyId: string, params?: { page?: number; limit?: number }) =>
+    api.get(`/surveys/${surveyId}/responses`, { params }),
+  createResponse: (surveyId: string, data: any) =>
+    api.post(`/surveys/${surveyId}/responses`, data),
+  getStats: (surveyId: string) =>
+    api.get(`/surveys/${surveyId}/stats`),
+};
+
+// Health Scores API
+export const healthScoresApi = {
+  getAll: (params?: { page?: number; limit?: number; riskLevel?: string; companyId?: string; contactId?: string }) =>
+    api.get('/health-scores', { params }),
+  getOne: (id: string) =>
+    api.get(`/health-scores/${id}`),
+  getByCompany: (companyId: string) =>
+    api.get(`/health-scores/company/${companyId}`),
+  create: (data: any) =>
+    api.post('/health-scores', data),
+  update: (id: string, data: any) =>
+    api.put(`/health-scores/${id}`, data),
+  recalculate: (companyId: string) =>
+    api.post(`/health-scores/company/${companyId}/recalculate`),
+  getStats: () =>
+    api.get('/health-scores/stats'),
+};
+
+// Email Sequences API
+export const emailSequencesApi = {
+  getAll: (params?: { page?: number; limit?: number; status?: string; trigger?: string }) =>
+    api.get('/email-sequences', { params }),
+  getOne: (id: string) =>
+    api.get(`/email-sequences/${id}`),
+  create: (data: any) =>
+    api.post('/email-sequences', data),
+  update: (id: string, data: any) =>
+    api.put(`/email-sequences/${id}`, data),
+  delete: (id: string) =>
+    api.delete(`/email-sequences/${id}`),
+  getSteps: (sequenceId: string) =>
+    api.get(`/email-sequences/${sequenceId}/steps`),
+  createStep: (sequenceId: string, data: any) =>
+    api.post(`/email-sequences/${sequenceId}/steps`, data),
+  updateStep: (sequenceId: string, stepId: string, data: any) =>
+    api.put(`/email-sequences/${sequenceId}/steps/${stepId}`, data),
+  deleteStep: (sequenceId: string, stepId: string) =>
+    api.delete(`/email-sequences/${sequenceId}/steps/${stepId}`),
+  getTemplates: (params?: { page?: number; limit?: number }) =>
+    api.get('/email-sequences/templates', { params }),
+  getTemplate: (id: string) =>
+    api.get(`/email-sequences/templates/${id}`),
+  createTemplate: (data: any) =>
+    api.post('/email-sequences/templates', data),
+  updateTemplate: (id: string, data: any) =>
+    api.put(`/email-sequences/templates/${id}`, data),
+  deleteTemplate: (id: string) =>
+    api.delete(`/email-sequences/templates/${id}`),
+};
+
+// Automations API
+export const automationsApi = {
+  getAll: (params?: { page?: number; limit?: number; status?: string; triggerType?: string }) =>
+    api.get('/automations', { params }),
+  getOne: (id: string) =>
+    api.get(`/automations/${id}`),
+  create: (data: any) =>
+    api.post('/automations', data),
+  update: (id: string, data: any) =>
+    api.put(`/automations/${id}`, data),
+  delete: (id: string) =>
+    api.delete(`/automations/${id}`),
+  toggle: (id: string) =>
+    api.post(`/automations/${id}/toggle`),
+  execute: (id: string) =>
+    api.post(`/automations/${id}/execute`),
+  getStats: () =>
+    api.get('/automations/stats'),
+};
+
+// Pipelines API
+export const pipelinesApi = {
+  getAll: (params?: { page?: number; limit?: number; type?: string }) =>
+    api.get('/pipelines', { params }),
+  getOne: (id: string) =>
+    api.get(`/pipelines/${id}`),
+  create: (data: any) =>
+    api.post('/pipelines', data),
+  update: (id: string, data: any) =>
+    api.put(`/pipelines/${id}`, data),
+  delete: (id: string) =>
+    api.delete(`/pipelines/${id}`),
+  getStages: (pipelineId: string) =>
+    api.get(`/pipelines/${pipelineId}/stages`),
+  createStage: (pipelineId: string, data: any) =>
+    api.post(`/pipelines/${pipelineId}/stages`, data),
+  updateStage: (pipelineId: string, stageId: string, data: any) =>
+    api.put(`/pipelines/${pipelineId}/stages/${stageId}`, data),
+  deleteStage: (pipelineId: string, stageId: string) =>
+    api.delete(`/pipelines/${pipelineId}/stages/${stageId}`),
+};
+
 // Reports API
 export const reportsApi = {
   getDealsByStage: (params?: { range?: string; startDate?: string; endDate?: string }) =>

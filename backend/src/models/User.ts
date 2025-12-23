@@ -2,30 +2,30 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import bcrypt from 'bcryptjs';
 
-export type UserRole = 'admin' | 'sales_rep';
+export type UserRole = 'admin' | 'manager' | 'agent';
 
 interface UserAttributes {
   id: string;
   email: string;
   passwordHash: string;
-  fullName: string;
+  firstName: string | null;
+  lastName: string | null;
   role: UserRole;
-  resetToken: string | null;
-  resetTokenExpires: Date | null;
+  companyId: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpires' | 'createdAt' | 'updatedAt'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'firstName' | 'lastName' | 'companyId' | 'createdAt' | 'updatedAt'> {}
 
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: string;
   public email!: string;
   public passwordHash!: string;
-  public fullName!: string;
+  public firstName!: string | null;
+  public lastName!: string | null;
   public role!: UserRole;
-  public resetToken!: string | null;
-  public resetTokenExpires!: Date | null;
+  public companyId!: string | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -33,12 +33,14 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
     return bcrypt.compare(password, this.passwordHash);
   }
 
-  public toJSON(): Omit<UserAttributes, 'passwordHash' | 'resetToken' | 'resetTokenExpires'> {
+  public get fullName(): string {
+    return [this.firstName, this.lastName].filter(Boolean).join(' ') || this.email;
+  }
+
+  public toJSON(): Omit<UserAttributes, 'passwordHash'> & { fullName: string } {
     const values = { ...this.get() };
     delete (values as any).passwordHash;
-    delete (values as any).resetToken;
-    delete (values as any).resetTokenExpires;
-    return values as Omit<UserAttributes, 'passwordHash' | 'resetToken' | 'resetTokenExpires'>;
+    return { ...values, fullName: this.fullName } as Omit<UserAttributes, 'passwordHash'> & { fullName: string };
   }
 }
 
@@ -62,25 +64,32 @@ User.init(
       allowNull: false,
       field: 'password_hash',
     },
-    fullName: {
+    firstName: {
       type: DataTypes.STRING(255),
-      allowNull: false,
-      field: 'full_name',
+      allowNull: true,
+      field: 'first_name',
+    },
+    lastName: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'last_name',
     },
     role: {
-      type: DataTypes.ENUM('admin', 'sales_rep'),
+      type: DataTypes.STRING(50),
       allowNull: false,
-      defaultValue: 'sales_rep',
+      defaultValue: 'agent',
+      validate: {
+        isIn: [['admin', 'manager', 'agent']],
+      },
     },
-    resetToken: {
-      type: DataTypes.STRING(255),
+    companyId: {
+      type: DataTypes.UUID,
       allowNull: true,
-      field: 'reset_token',
-    },
-    resetTokenExpires: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      field: 'reset_token_expires',
+      field: 'company_id',
+      references: {
+        model: 'companies',
+        key: 'id',
+      },
     },
   },
   {

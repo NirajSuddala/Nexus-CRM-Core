@@ -1,29 +1,37 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
-export type EntityType = 'company' | 'contact' | 'deal' | 'task';
+export type ActivityType = 'email' | 'call' | 'meeting' | 'note' | 'task' | 'created' | 'updated' | 'deleted' | 'stage_changed' | 'status_changed' | 'assigned' | 'comment';
 
 interface ActivityAttributes {
   id: string;
-  entityType: EntityType;
-  entityId: string;
-  userId: string | null;
-  action: string;
+  type: ActivityType;
+  contactId: string | null;
+  companyId: string | null;
+  dealId: string | null;
+  taskId: string | null;
+  emailId: string | null;
+  createdBy: string;
   description: string | null;
   metadata: Record<string, any> | null;
+  timestamp: Date;
   createdAt?: Date;
 }
 
-interface ActivityCreationAttributes extends Optional<ActivityAttributes, 'id' | 'userId' | 'description' | 'metadata' | 'createdAt'> {}
+interface ActivityCreationAttributes extends Optional<ActivityAttributes, 'id' | 'contactId' | 'companyId' | 'dealId' | 'taskId' | 'emailId' | 'description' | 'metadata' | 'createdAt'> {}
 
 class Activity extends Model<ActivityAttributes, ActivityCreationAttributes> implements ActivityAttributes {
   public id!: string;
-  public entityType!: EntityType;
-  public entityId!: string;
-  public userId!: string | null;
-  public action!: string;
+  public type!: ActivityType;
+  public contactId!: string | null;
+  public companyId!: string | null;
+  public dealId!: string | null;
+  public taskId!: string | null;
+  public emailId!: string | null;
+  public createdBy!: string;
   public description!: string | null;
   public metadata!: Record<string, any> | null;
+  public timestamp!: Date;
   public readonly createdAt!: Date;
 }
 
@@ -34,28 +42,66 @@ Activity.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    entityType: {
-      type: DataTypes.ENUM('company', 'contact', 'deal', 'task'),
+    type: {
+      type: DataTypes.STRING(50),
       allowNull: false,
-      field: 'entity_type',
+      validate: {
+        isIn: [['email', 'call', 'meeting', 'note', 'task', 'created', 'updated', 'deleted', 'stage_changed', 'status_changed', 'assigned', 'comment']],
+      },
     },
-    entityId: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      field: 'entity_id',
-    },
-    userId: {
+    contactId: {
       type: DataTypes.UUID,
       allowNull: true,
-      field: 'user_id',
+      field: 'contact_id',
+      references: {
+        model: 'contacts',
+        key: 'id',
+      },
+    },
+    companyId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'company_id',
+      references: {
+        model: 'companies',
+        key: 'id',
+      },
+    },
+    dealId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'deal_id',
+      references: {
+        model: 'deals',
+        key: 'id',
+      },
+    },
+    taskId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'task_id',
+      references: {
+        model: 'tasks',
+        key: 'id',
+      },
+    },
+    emailId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'email_id',
+      references: {
+        model: 'emails',
+        key: 'id',
+      },
+    },
+    createdBy: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      field: 'created_by',
       references: {
         model: 'users',
         key: 'id',
       },
-    },
-    action: {
-      type: DataTypes.STRING(50),
-      allowNull: false,
     },
     description: {
       type: DataTypes.TEXT,
@@ -64,6 +110,10 @@ Activity.init(
     metadata: {
       type: DataTypes.JSONB,
       allowNull: true,
+    },
+    timestamp: {
+      type: DataTypes.DATE,
+      allowNull: false,
     },
   },
   {

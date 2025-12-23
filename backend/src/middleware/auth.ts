@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { isDatabaseConnected } from '../config/database';
+import { UserRole } from '../models/User';
 
-type UserRole = 'admin' | 'sales_rep';
+export { UserRole };
 
 interface JwtPayload {
   userId: string;
@@ -24,10 +25,15 @@ declare global {
 }
 
 // Demo user for when database is not connected
-const DEMO_USER = {
+const DEMO_USER: {
+  id: string;
+  email: string;
+  role: UserRole;
+  fullName: string;
+} = {
   id: 'demo-user-id',
   email: 'demo@nexuscrm.com',
-  role: 'admin' as UserRole,
+  role: 'admin',
   fullName: 'Demo User',
 };
 
@@ -99,7 +105,7 @@ export const generateToken = (user: { id: string; email: string; role: UserRole 
   return jwt.sign(
     { userId: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET || 'secret',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: '7d' } as jwt.SignOptions
   );
 };
 
@@ -107,6 +113,6 @@ export const generateRefreshToken = (user: { id: string }): string => {
   return jwt.sign(
     { userId: user.id },
     process.env.JWT_SECRET || 'secret',
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
+    { expiresIn: '30d' } as jwt.SignOptions
   );
 };

@@ -6,6 +6,13 @@ import dealsReducer from '../features/dealsSlice';
 import tasksReducer from '../features/tasksSlice';
 import dashboardReducer from '../features/dashboardSlice';
 import uiReducer from '../features/uiSlice';
+import projectsReducer from '../features/projectsSlice';
+import ticketsReducer from '../features/ticketsSlice';
+import surveysReducer from '../features/surveysSlice';
+import healthScoresReducer from '../features/healthScoresSlice';
+import emailSequencesReducer from '../features/emailSequencesSlice';
+import automationsReducer from '../features/automationsSlice';
+import pipelinesReducer from '../features/pipelinesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +23,13 @@ export const store = configureStore({
     tasks: tasksReducer,
     dashboard: dashboardReducer,
     ui: uiReducer,
+    projects: projectsReducer,
+    tickets: ticketsReducer,
+    surveys: surveysReducer,
+    healthScores: healthScoresReducer,
+    emailSequences: emailSequencesReducer,
+    automations: automationsReducer,
+    pipelines: pipelinesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

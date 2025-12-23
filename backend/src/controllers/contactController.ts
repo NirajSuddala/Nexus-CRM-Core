@@ -18,11 +18,12 @@ export const getContacts = async (
     if (!isDatabaseConnected) {
       let filtered = [...demoContacts];
       if (search) {
-        filtered = filtered.filter(c =>
-          c.fullName.toLowerCase().includes(search) ||
-          (c.email && c.email.toLowerCase().includes(search)) ||
-          (c.jobTitle && c.jobTitle.toLowerCase().includes(search))
-        );
+        filtered = filtered.filter(c => {
+          const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
+          return fullName.includes(search) ||
+            (c.email && c.email.toLowerCase().includes(search)) ||
+            (c.title && c.title.toLowerCase().includes(search));
+        });
       }
       if (companyId) filtered = filtered.filter(c => c.companyId === companyId);
       if (lifecycleStage) filtered = filtered.filter(c => c.lifecycleStage === lifecycleStage);
@@ -51,9 +52,10 @@ export const getContacts = async (
     const where: any = {};
     if (search) {
       where[Op.or] = [
-        { fullName: { [Op.iLike]: `%${search}%` } },
+        { firstName: { [Op.iLike]: `%${search}%` } },
+        { lastName: { [Op.iLike]: `%${search}%` } },
         { email: { [Op.iLike]: `%${search}%` } },
-        { jobTitle: { [Op.iLike]: `%${search}%` } },
+        { title: { [Op.iLike]: `%${search}%` } },
       ];
     }
     if (companyId) where.companyId = companyId;
@@ -102,14 +104,13 @@ export const getContact = async (
         tasks: demoTasks.filter(t => t.contactId === contact.id),
       };
 
-      const activities = demoActivities.filter(a => a.entityType === 'contact' && a.entityId === contact.id);
-      const notes: any[] = [];
+      const activities = demoActivities.filter(a => a.contactId === contact.id);
 
-      res.json({ contact: contactWithRelations, activities, notes });
+      res.json({ contact: contactWithRelations, activities });
       return;
     }
 
-    const { Contact, Company, Deal, Task, Activity, Note } = await import('../models');
+    const { Contact, Company, Deal, Task, Activity } = await import('../models');
 
     const contact = await Contact.findByPk(req.params.id, {
       include: [
@@ -123,19 +124,13 @@ export const getContact = async (
       throw new AppError('Contact not found', 404);
     }
 
-    const [activities, notes] = await Promise.all([
-      Activity.findAll({
-        where: { entityType: 'contact', entityId: contact.id },
-        order: [['createdAt', 'DESC']],
-        limit: 20,
-      }),
-      Note.findAll({
-        where: { entityType: 'contact', entityId: contact.id },
-        order: [['createdAt', 'DESC']],
-      }),
-    ]);
+    const activities = await Activity.findAll({
+      where: { contactId: contact.id },
+      order: [['createdAt', 'DESC']],
+      limit: 20,
+    });
 
-    res.json({ contact, activities, notes });
+    res.json({ contact, activities });
   } catch (error) {
     next(error);
   }
@@ -170,7 +165,7 @@ export const createContact = async (
       contact.id,
       'created',
       req.user?.id,
-      `Contact "${contact.fullName}" was created`
+      `Contact "${contact.firstName} ${contact.lastName}" was created`
     );
 
     const fullContact = await Contact.findByPk(contact.id, {
@@ -220,7 +215,7 @@ export const updateContact = async (
       contact.id,
       'updated',
       req.user?.id,
-      `Contact "${contact.fullName}" was updated`,
+      `Contact "${contact.firstName} ${contact.lastName}" was updated`,
       { previousData, newData: req.body }
     );
 

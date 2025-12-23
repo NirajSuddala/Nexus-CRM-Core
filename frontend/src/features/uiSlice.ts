@@ -8,7 +8,7 @@ interface Notification {
 }
 
 interface Modal {
-  type: 'company' | 'contact' | 'deal' | 'task' | 'note' | 'confirm' | null;
+  type: 'company' | 'contact' | 'deal' | 'task' | 'note' | 'confirm' | 'project' | 'ticket' | 'survey' | 'automation' | 'emailSequence' | 'pipeline' | null;
   mode: 'create' | 'edit' | 'view' | null;
   data?: any;
 }

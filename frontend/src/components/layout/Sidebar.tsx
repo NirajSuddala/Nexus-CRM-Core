@@ -11,6 +11,13 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  FolderKanban,
+  Ticket,
+  ClipboardList,
+  Activity,
+  Mail,
+  Zap,
+  GitBranch,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { toggleSidebar } from '../../features/uiSlice';
@@ -21,6 +28,13 @@ const navigation = [
   { name: 'Contacts', href: '/contacts', icon: Users },
   { name: 'Deals', href: '/deals', icon: Briefcase },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
+  { name: 'Projects', href: '/projects', icon: FolderKanban },
+  { name: 'Tickets', href: '/tickets', icon: Ticket },
+  { name: 'Surveys', href: '/surveys', icon: ClipboardList },
+  { name: 'Health Scores', href: '/health-scores', icon: Activity },
+  { name: 'Email Sequences', href: '/email-sequences', icon: Mail },
+  { name: 'Automations', href: '/automations', icon: Zap },
+  { name: 'Pipelines', href: '/pipelines', icon: GitBranch },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
 

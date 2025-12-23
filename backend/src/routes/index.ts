@@ -8,6 +8,13 @@ import noteRoutes from './noteRoutes';
 import dashboardRoutes from './dashboardRoutes';
 import searchRoutes from './searchRoutes';
 import reportRoutes from './reportRoutes';
+import pipelineRoutes from './pipelineRoutes';
+import projectRoutes from './projectRoutes';
+import ticketRoutes from './ticketRoutes';
+import surveyRoutes from './surveyRoutes';
+import healthScoreRoutes from './healthScoreRoutes';
+import emailSequenceRoutes from './emailSequenceRoutes';
+import automationRoutes from './automationRoutes';
 
 const router = Router();
 
@@ -20,6 +27,13 @@ router.use('/notes', noteRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/search', searchRoutes);
 router.use('/reports', reportRoutes);
+router.use('/pipelines', pipelineRoutes);
+router.use('/projects', projectRoutes);
+router.use('/tickets', ticketRoutes);
+router.use('/surveys', surveyRoutes);
+router.use('/health-scores', healthScoreRoutes);
+router.use('/email-sequences', emailSequenceRoutes);
+router.use('/automations', automationRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

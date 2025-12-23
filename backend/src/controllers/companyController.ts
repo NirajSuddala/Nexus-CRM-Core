@@ -18,7 +18,7 @@ export const getCompanies = async (
       if (search) {
         filtered = demoCompanies.filter(c =>
           c.name.toLowerCase().includes(search) ||
-          (c.domain && c.domain.toLowerCase().includes(search)) ||
+          (c.website && c.website.toLowerCase().includes(search)) ||
           (c.industry && c.industry.toLowerCase().includes(search))
         );
       }
@@ -27,7 +27,7 @@ export const getCompanies = async (
       const companiesWithRelations = filtered.map(company => ({
         ...company,
         contacts: demoContacts.filter(c => c.companyId === company.id).map(c => ({ id: c.id })),
-        deals: demoDeals.filter(d => d.companyId === company.id).map(d => ({ id: d.id, amount: d.amount, stage: d.stage })),
+        deals: demoDeals.filter(d => d.companyId === company.id).map(d => ({ id: d.id, amount: d.amount, stageId: d.stageId })),
       }));
 
       res.json({
@@ -50,7 +50,7 @@ export const getCompanies = async (
     if (search) {
       where[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
-        { domain: { [Op.iLike]: `%${search}%` } },
+        { website: { [Op.iLike]: `%${search}%` } },
         { industry: { [Op.iLike]: `%${search}%` } },
       ];
     }
@@ -59,7 +59,7 @@ export const getCompanies = async (
       where,
       include: [
         { model: Contact, as: 'contacts', attributes: ['id'] },
-        { model: Deal, as: 'deals', attributes: ['id', 'amount', 'stage'] },
+        { model: Deal, as: 'deals', attributes: ['id', 'amount', 'stageId'] },
       ],
       order: [['createdAt', 'DESC']],
       limit,
@@ -98,7 +98,7 @@ export const getCompany = async (
         deals: demoDeals.filter(d => d.companyId === company.id),
       };
 
-      const activities = demoActivities.filter(a => a.entityType === 'company' && a.entityId === company.id);
+      const activities = demoActivities.filter(a => a.companyId === company.id);
 
       res.json({ company: companyWithRelations, activities });
       return;
@@ -118,7 +118,7 @@ export const getCompany = async (
     }
 
     const activities = await Activity.findAll({
-      where: { entityType: 'company', entityId: company.id },
+      where: { companyId: company.id },
       order: [['createdAt', 'DESC']],
       limit: 20,
     });

@@ -46,12 +46,13 @@ export const getDealsByStageReport = async (
       // Demo mode - aggregate deals by stage
       const stageGroups: Record<string, { count: number; totalValue: number; amounts: number[] }> = {};
       demoDeals.forEach(deal => {
-        if (!stageGroups[deal.stage]) {
-          stageGroups[deal.stage] = { count: 0, totalValue: 0, amounts: [] };
+        const stageName = deal.stageName || 'Unknown';
+        if (!stageGroups[stageName]) {
+          stageGroups[stageName] = { count: 0, totalValue: 0, amounts: [] };
         }
-        stageGroups[deal.stage].count++;
-        stageGroups[deal.stage].totalValue += deal.amount || 0;
-        stageGroups[deal.stage].amounts.push(deal.amount || 0);
+        stageGroups[stageName].count++;
+        stageGroups[stageName].totalValue += deal.amount || 0;
+        stageGroups[stageName].amounts.push(deal.amount || 0);
       });
 
       const stats = Object.entries(stageGroups).map(([stage, data]) => ({
@@ -68,21 +69,22 @@ export const getDealsByStageReport = async (
       return;
     }
 
-    const { Deal } = await import('../models');
+    const { Deal, PipelineStage } = await import('../models');
     const { Op } = await import('sequelize');
     const sequelize = (await import('../config/database')).default;
 
     const stats = await Deal.findAll({
       attributes: [
-        'stage',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+        'stageId',
+        [sequelize.fn('COUNT', sequelize.col('Deal.id')), 'count'],
         [sequelize.fn('SUM', sequelize.col('amount')), 'totalValue'],
         [sequelize.fn('AVG', sequelize.col('amount')), 'avgValue'],
       ],
+      include: [{ model: PipelineStage, as: 'stage', attributes: ['name'] }],
       where: {
         createdAt: { [Op.between]: [start, end] },
       },
-      group: ['stage'],
+      group: ['Deal.stageId', 'stage.id'],
       raw: true,
     });
 
@@ -120,7 +122,6 @@ export const getDealValueOverTime = async (
           periodDate.setDate(periodDate.getDate() - i);
         }
 
-        const dealsInPeriod = demoDeals.filter(() => Math.random() > 0.3); // Random sample
         periods.push({
           period: periodDate.toISOString(),
           count: Math.floor(demoDeals.length * (i + 1) / 3),
@@ -175,17 +176,17 @@ export const getWinLossReport = async (
     const { start, end } = getDateRange(range, startDate, endDate);
 
     if (!isDatabaseConnected) {
-      const wonDeals = demoDeals.filter(d => d.stage === 'closed_won');
-      const lostDeals = demoDeals.filter(d => d.stage === 'closed_lost');
+      const wonDeals = demoDeals.filter(d => d.stageName === 'Closed Won');
+      const lostDeals = demoDeals.filter(d => d.stageName === 'Closed Lost');
 
       const summary = [
         {
-          stage: 'closed_won',
+          stage: 'Closed Won',
           count: wonDeals.length,
           totalValue: wonDeals.reduce((sum, d) => sum + (d.amount || 0), 0),
         },
         {
-          stage: 'closed_lost',
+          stage: 'Closed Lost',
           count: lostDeals.length,
           totalValue: lostDeals.reduce((sum, d) => sum + (d.amount || 0), 0),
         },
@@ -200,44 +201,53 @@ export const getWinLossReport = async (
       return;
     }
 
-    const { Deal, Company } = await import('../models');
+    const { Deal, Company, PipelineStage } = await import('../models');
     const { Op } = await import('sequelize');
     const sequelize = (await import('../config/database')).default;
+
+    // Get closed stage IDs
+    const closedWonStages = await PipelineStage.findAll({ where: { name: 'Closed Won' } });
+    const closedLostStages = await PipelineStage.findAll({ where: { name: 'Closed Lost' } });
+    const closedWonIds = closedWonStages.map(s => s.id);
+    const closedLostIds = closedLostStages.map(s => s.id);
 
     const [won, lost, summary] = await Promise.all([
       Deal.findAll({
         where: {
-          stage: 'closed_won',
+          stageId: { [Op.in]: closedWonIds },
           updatedAt: { [Op.between]: [start, end] },
         },
         include: [
           { model: Company, as: 'company', attributes: ['id', 'name'] },
+          { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
         ],
         order: [['amount', 'DESC']],
         limit: 10,
       }),
       Deal.findAll({
         where: {
-          stage: 'closed_lost',
+          stageId: { [Op.in]: closedLostIds },
           updatedAt: { [Op.between]: [start, end] },
         },
         include: [
           { model: Company, as: 'company', attributes: ['id', 'name'] },
+          { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
         ],
         order: [['amount', 'DESC']],
         limit: 10,
       }),
       Deal.findAll({
         attributes: [
-          'stage',
-          [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+          'stageId',
+          [sequelize.fn('COUNT', sequelize.col('Deal.id')), 'count'],
           [sequelize.fn('SUM', sequelize.col('amount')), 'totalValue'],
         ],
+        include: [{ model: PipelineStage, as: 'stage', attributes: ['name'] }],
         where: {
-          stage: { [Op.in]: ['closed_won', 'closed_lost'] },
+          stageId: { [Op.in]: [...closedWonIds, ...closedLostIds] },
           updatedAt: { [Op.between]: [start, end] },
         },
-        group: ['stage'],
+        group: ['Deal.stageId', 'stage.id'],
         raw: true,
       }),
     ]);
@@ -254,14 +264,14 @@ export const getWinLossReport = async (
 };
 
 export const getSalesForecast = async (
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
     if (!isDatabaseConnected) {
       const pipelineDeals = demoDeals.filter(
-        d => !['closed_won', 'closed_lost'].includes(d.stage)
+        d => !['Closed Won', 'Closed Lost'].includes(d.stageName)
       );
 
       const forecast = pipelineDeals.map(deal => ({
@@ -283,24 +293,31 @@ export const getSalesForecast = async (
       return;
     }
 
-    const { Deal, Company } = await import('../models');
+    const { Deal, Company, PipelineStage } = await import('../models');
     const { Op } = await import('sequelize');
+
+    // Get closed stage IDs to exclude
+    const closedStages = await PipelineStage.findAll({
+      where: { name: { [Op.in]: ['Closed Won', 'Closed Lost'] } },
+    });
+    const closedStageIds = closedStages.map(s => s.id);
 
     const deals = await Deal.findAll({
       where: {
-        stage: { [Op.notIn]: ['closed_won', 'closed_lost'] },
-        closeDate: { [Op.not]: null },
+        stageId: { [Op.notIn]: closedStageIds },
+        expectedCloseDate: { [Op.not]: null },
       },
       include: [
         { model: Company, as: 'company', attributes: ['id', 'name'] },
+        { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
       ],
-      order: [['closeDate', 'ASC']],
+      order: [['expectedCloseDate', 'ASC']],
     });
 
     // Calculate weighted pipeline value
     const forecast = deals.map((deal) => ({
       ...deal.toJSON(),
-      weightedValue: (deal.amount || 0) * (deal.probability / 100),
+      weightedValue: (deal.amount || 0) * ((deal.probability || 0) / 100),
     }));
 
     const totalWeightedValue = forecast.reduce((sum, deal) => sum + deal.weightedValue, 0);
@@ -311,7 +328,7 @@ export const getSalesForecast = async (
       totalPipelineValue,
       totalWeightedValue,
       avgProbability: deals.length > 0
-        ? Math.round(deals.reduce((sum, deal) => sum + deal.probability, 0) / deals.length)
+        ? Math.round(deals.reduce((sum, deal) => sum + (deal.probability || 0), 0) / deals.length)
         : 0,
     });
   } catch (error) {
@@ -555,10 +572,10 @@ export const getTaskCompletionReport = async (
       },
       group: ['status'],
       raw: true,
-    });
+    }) as unknown as Array<{ status: string; count: string }>;
 
-    const total = stats.reduce((sum: number, s: any) => sum + parseInt(s.count), 0);
-    const completed = stats.find((s: any) => s.status === 'completed');
+    const total = stats.reduce((sum: number, s) => sum + parseInt(s.count), 0);
+    const completed = stats.find((s) => s.status === 'completed');
     const completionRate = total > 0 ? Math.round((parseInt(completed?.count || '0') / total) * 100) : 0;
 
     res.json({
@@ -580,16 +597,22 @@ export const getActivityLog = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
-    const { range = 'last7days', startDate, endDate, entityType, action } = req.query as any;
+    const { range = 'last7days', startDate, endDate, activityType, contactId, companyId, dealId } = req.query as any;
     const { start, end } = getDateRange(range, startDate, endDate);
 
     if (!isDatabaseConnected) {
       let filtered = [...demoActivities];
-      if (entityType) {
-        filtered = filtered.filter(a => a.entityType === entityType);
+      if (activityType) {
+        filtered = filtered.filter(a => a.type === activityType);
       }
-      if (action) {
-        filtered = filtered.filter(a => a.action === action);
+      if (contactId) {
+        filtered = filtered.filter(a => a.contactId === contactId);
+      }
+      if (companyId) {
+        filtered = filtered.filter(a => a.companyId === companyId);
+      }
+      if (dealId) {
+        filtered = filtered.filter(a => a.dealId === dealId);
       }
 
       res.json({
@@ -612,8 +635,10 @@ export const getActivityLog = async (
     const where: any = {
       createdAt: { [Op.between]: [start, end] },
     };
-    if (entityType) where.entityType = entityType;
-    if (action) where.action = action;
+    if (activityType) where.type = activityType;
+    if (contactId) where.contactId = contactId;
+    if (companyId) where.companyId = companyId;
+    if (dealId) where.dealId = dealId;
 
     const { rows: activities, count } = await Activity.findAndCountAll({
       where,

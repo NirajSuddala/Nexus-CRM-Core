@@ -12,7 +12,7 @@ export const getDeals = async (
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const search = (req.query.search as string || '').toLowerCase();
-    const stage = req.query.stage as string;
+    const stageId = req.query.stageId as string;
     const companyId = req.query.companyId as string;
     const contactId = req.query.contactId as string;
 
@@ -21,7 +21,7 @@ export const getDeals = async (
       if (search) {
         filtered = filtered.filter(d => d.name.toLowerCase().includes(search));
       }
-      if (stage) filtered = filtered.filter(d => d.stage === stage);
+      if (stageId) filtered = filtered.filter(d => d.stageId === stageId);
       if (companyId) filtered = filtered.filter(d => d.companyId === companyId);
       if (contactId) filtered = filtered.filter(d => d.contactId === contactId);
 
@@ -37,7 +37,7 @@ export const getDeals = async (
       return;
     }
 
-    const { Deal, Company, Contact } = await import('../models');
+    const { Deal, Company, Contact, PipelineStage } = await import('../models');
     const { Op } = await import('sequelize');
     const offset = (page - 1) * limit;
 
@@ -45,7 +45,7 @@ export const getDeals = async (
     if (search) {
       where.name = { [Op.iLike]: `%${search}%` };
     }
-    if (stage) where.stage = stage;
+    if (stageId) where.stageId = stageId;
     if (companyId) where.companyId = companyId;
     if (contactId) where.contactId = contactId;
 
@@ -53,7 +53,8 @@ export const getDeals = async (
       where,
       include: [
         { model: Company, as: 'company', attributes: ['id', 'name'] },
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName', 'email'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName', 'email'] },
+        { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
       ],
       order: [['createdAt', 'DESC']],
       limit,
@@ -75,7 +76,7 @@ export const getDeals = async (
 };
 
 export const getDealsByStage = async (
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -85,20 +86,23 @@ export const getDealsByStage = async (
       return;
     }
 
-    const { Deal, Company, Contact } = await import('../models');
-    const stages = ['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
+    const { Deal, Company, Contact, PipelineStage } = await import('../models');
+
+    // Get all stages and group deals by stage name
+    const stages = await PipelineStage.findAll({ order: [['sortOrder', 'ASC']] });
     const result: Record<string, any[]> = {};
 
     for (const stage of stages) {
       const deals = await Deal.findAll({
-        where: { stage },
+        where: { stageId: stage.id },
         include: [
           { model: Company, as: 'company', attributes: ['id', 'name'] },
-          { model: Contact, as: 'contact', attributes: ['id', 'fullName'] },
+          { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName'] },
+          { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
         ],
         order: [['createdAt', 'DESC']],
       });
-      result[stage] = deals;
+      result[stage.name.toLowerCase().replace(' ', '_')] = deals;
     }
 
     res.json(result);
@@ -124,20 +128,20 @@ export const getDeal = async (
         tasks: demoTasks.filter(t => t.dealId === deal.id),
       };
 
-      const activities = demoActivities.filter(a => a.entityType === 'deal' && a.entityId === deal.id);
-      const notes: any[] = [];
+      const activities = demoActivities.filter(a => a.dealId === deal.id);
 
-      res.json({ deal: dealWithRelations, activities, notes });
+      res.json({ deal: dealWithRelations, activities });
       return;
     }
 
-    const { Deal, Company, Contact, Task, Activity, Note } = await import('../models');
+    const { Deal, Company, Contact, Task, Activity, PipelineStage } = await import('../models');
 
     const deal = await Deal.findByPk(req.params.id, {
       include: [
         { model: Company, as: 'company' },
         { model: Contact, as: 'contact' },
         { model: Task, as: 'tasks' },
+        { model: PipelineStage, as: 'stage' },
       ],
     });
 
@@ -145,19 +149,13 @@ export const getDeal = async (
       throw new AppError('Deal not found', 404);
     }
 
-    const [activities, notes] = await Promise.all([
-      Activity.findAll({
-        where: { entityType: 'deal', entityId: deal.id },
-        order: [['createdAt', 'DESC']],
-        limit: 20,
-      }),
-      Note.findAll({
-        where: { entityType: 'deal', entityId: deal.id },
-        order: [['createdAt', 'DESC']],
-      }),
-    ]);
+    const activities = await Activity.findAll({
+      where: { dealId: deal.id },
+      order: [['createdAt', 'DESC']],
+      limit: 20,
+    });
 
-    res.json({ deal, activities, notes });
+    res.json({ deal, activities });
   } catch (error) {
     next(error);
   }
@@ -173,19 +171,19 @@ export const createDeal = async (
       const newDeal = {
         id: `demo-deal-${Date.now()}`,
         ...req.body,
-        stage: req.body.stage || 'discovery',
+        stageId: req.body.stageId || 'demo-stage-1',
         probability: req.body.probability || 20,
         company: req.body.companyId ? demoCompanies.find(c => c.id === req.body.companyId) : null,
         contact: req.body.contactId ? demoContacts.find(c => c.id === req.body.contactId) : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      demoDeals.push(newDeal);
+      demoDeals.push(newDeal as any);
       res.status(201).json(newDeal);
       return;
     }
 
-    const { Deal, Company, Contact } = await import('../models');
+    const { Deal, Company, Contact, PipelineStage } = await import('../models');
     const { logDealActivity } = await import('../services/activityService');
 
     const deal = await Deal.create(req.body);
@@ -200,7 +198,8 @@ export const createDeal = async (
     const fullDeal = await Deal.findByPk(deal.id, {
       include: [
         { model: Company, as: 'company', attributes: ['id', 'name'] },
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName', 'email'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName', 'email'] },
+        { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
       ],
     });
 
@@ -241,7 +240,7 @@ export const updateDeal = async (
       return;
     }
 
-    const { Deal, Company, Contact } = await import('../models');
+    const { Deal, Company, Contact, PipelineStage } = await import('../models');
     const { logDealActivity } = await import('../services/activityService');
 
     const deal = await Deal.findByPk(req.params.id);
@@ -264,7 +263,8 @@ export const updateDeal = async (
     const fullDeal = await Deal.findByPk(deal.id, {
       include: [
         { model: Company, as: 'company', attributes: ['id', 'name'] },
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName', 'email'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName', 'email'] },
+        { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
       ],
     });
 
@@ -294,40 +294,43 @@ export const updateDealStage = async (
       if (index === -1) {
         throw new AppError('Deal not found', 404);
       }
-      const previousStage = demoDeals[index].stage;
+      const previousStageId = demoDeals[index].stageId;
       demoDeals[index] = {
         ...demoDeals[index],
-        stage: req.body.stage,
+        stageId: req.body.stageId,
         updatedAt: new Date().toISOString()
       };
       res.json(demoDeals[index]);
       return;
     }
 
-    const { Deal, Company, Contact } = await import('../models');
+    const { Deal, Company, Contact, PipelineStage } = await import('../models');
     const { logDealActivity } = await import('../services/activityService');
 
-    const deal = await Deal.findByPk(req.params.id);
+    const deal = await Deal.findByPk(req.params.id, {
+      include: [{ model: PipelineStage, as: 'stage' }],
+    });
 
     if (!deal) {
       throw new AppError('Deal not found', 404);
     }
 
-    const previousStage = deal.stage;
-    await deal.update({ stage: req.body.stage });
+    const previousStageId = deal.stageId;
+    await deal.update({ stageId: req.body.stageId });
 
     await logDealActivity(
       deal.id,
       'stage_changed',
       req.user?.id,
-      `Deal "${deal.name}" moved from ${previousStage} to ${req.body.stage}`,
-      { previousStage, newStage: req.body.stage }
+      `Deal "${deal.name}" stage changed`,
+      { previousStageId, newStageId: req.body.stageId }
     );
 
     const fullDeal = await Deal.findByPk(deal.id, {
       include: [
         { model: Company, as: 'company', attributes: ['id', 'name'] },
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName', 'email'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName', 'email'] },
+        { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
       ],
     });
 
@@ -335,7 +338,7 @@ export const updateDealStage = async (
     try {
       const { getIO } = await import('../socket');
       const io = getIO();
-      io.emit('deal:stageChanged', { deal: fullDeal, previousStage, newStage: req.body.stage });
+      io.emit('deal:stageChanged', { deal: fullDeal, previousStageId, newStageId: req.body.stageId });
     } catch (e) {
       // Socket not initialized yet
     }

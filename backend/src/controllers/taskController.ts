@@ -20,7 +20,7 @@ export const getTasks = async (
     if (!isDatabaseConnected) {
       let filtered = [...demoTasks];
       if (search) {
-        filtered = filtered.filter(t => t.name.toLowerCase().includes(search));
+        filtered = filtered.filter(t => t.title.toLowerCase().includes(search));
       }
       if (status) filtered = filtered.filter(t => t.status === status);
       if (priority) filtered = filtered.filter(t => t.priority === priority);
@@ -45,7 +45,7 @@ export const getTasks = async (
 
     const where: any = {};
     if (search) {
-      where.name = { [Op.iLike]: `%${search}%` };
+      where.title = { [Op.iLike]: `%${search}%` };
     }
     if (status) where.status = status;
     if (priority) where.priority = priority;
@@ -55,9 +55,9 @@ export const getTasks = async (
     const { rows: tasks, count } = await Task.findAndCountAll({
       where,
       include: [
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName'] },
         { model: Deal, as: 'deal', attributes: ['id', 'name'] },
-        { model: User, as: 'assignee', attributes: ['id', 'fullName'] },
+        { model: User, as: 'assignee', attributes: ['id', 'firstName', 'lastName'] },
       ],
       order: [
         ['dueDate', 'ASC'],
@@ -116,9 +116,9 @@ export const getUpcomingTasks = async (
         },
       },
       include: [
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName'] },
         { model: Deal, as: 'deal', attributes: ['id', 'name'] },
-        { model: User, as: 'assignee', attributes: ['id', 'fullName'] },
+        { model: User, as: 'assignee', attributes: ['id', 'firstName', 'lastName'] },
       ],
       order: [
         ['dueDate', 'ASC'],
@@ -159,9 +159,9 @@ export const getOverdueTasks = async (
         dueDate: { [Op.lt]: today },
       },
       include: [
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName'] },
         { model: Deal, as: 'deal', attributes: ['id', 'name'] },
-        { model: User, as: 'assignee', attributes: ['id', 'fullName'] },
+        { model: User, as: 'assignee', attributes: ['id', 'firstName', 'lastName'] },
       ],
       order: [
         ['dueDate', 'ASC'],
@@ -244,14 +244,14 @@ export const createTask = async (
       task.id,
       'created',
       req.user?.id,
-      `Task "${task.name}" was created`
+      `Task "${task.title}" was created`
     );
 
     const fullTask = await Task.findByPk(task.id, {
       include: [
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName'] },
         { model: Deal, as: 'deal', attributes: ['id', 'name'] },
-        { model: User, as: 'assignee', attributes: ['id', 'fullName'] },
+        { model: User, as: 'assignee', attributes: ['id', 'firstName', 'lastName'] },
       ],
     });
 
@@ -299,15 +299,15 @@ export const updateTask = async (
       task.id,
       'updated',
       req.user?.id,
-      `Task "${task.name}" was updated`,
+      `Task "${task.title}" was updated`,
       { previousData, newData: req.body }
     );
 
     const fullTask = await Task.findByPk(task.id, {
       include: [
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName'] },
         { model: Deal, as: 'deal', attributes: ['id', 'name'] },
-        { model: User, as: 'assignee', attributes: ['id', 'fullName'] },
+        { model: User, as: 'assignee', attributes: ['id', 'firstName', 'lastName'] },
       ],
     });
 

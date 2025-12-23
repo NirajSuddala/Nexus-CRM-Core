@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { Note, User } from '../models';
 import { AppError } from '../middleware/errorHandler';
-import { logContactActivity, logDealActivity } from '../services/activityService';
+import { isDatabaseConnected } from '../config/database';
+import { demoActivities } from '../services/demoData';
+
+// Notes are now stored as Activities with type='note'
 
 export const getNotes = async (
   req: Request,
@@ -9,19 +11,28 @@ export const getNotes = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { entityType, entityId } = req.query;
+    const { contactId, companyId, dealId } = req.query;
 
-    if (!entityType || !entityId) {
-      throw new AppError('entityType and entityId are required', 400);
+    if (!isDatabaseConnected) {
+      let filtered = demoActivities.filter(a => a.type === 'note');
+      if (contactId) filtered = filtered.filter(a => a.contactId === contactId);
+      if (companyId) filtered = filtered.filter(a => a.companyId === companyId);
+      if (dealId) filtered = filtered.filter(a => a.dealId === dealId);
+      res.json(filtered);
+      return;
     }
 
-    const notes = await Note.findAll({
-      where: {
-        entityType: entityType as string,
-        entityId: entityId as string,
-      },
+    const { Activity, User } = await import('../models');
+
+    const where: any = { type: 'note' };
+    if (contactId) where.contactId = contactId;
+    if (companyId) where.companyId = companyId;
+    if (dealId) where.dealId = dealId;
+
+    const notes = await Activity.findAll({
+      where,
       include: [
-        { model: User, as: 'user', attributes: ['id', 'fullName'] },
+        { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName'] },
       ],
       order: [['createdAt', 'DESC']],
     });
@@ -38,9 +49,21 @@ export const getNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const note = await Note.findByPk(req.params.id, {
+    if (!isDatabaseConnected) {
+      const note = demoActivities.find(a => a.id === req.params.id && a.type === 'note');
+      if (!note) {
+        throw new AppError('Note not found', 404);
+      }
+      res.json(note);
+      return;
+    }
+
+    const { Activity, User } = await import('../models');
+
+    const note = await Activity.findOne({
+      where: { id: req.params.id, type: 'note' },
       include: [
-        { model: User, as: 'user', attributes: ['id', 'fullName'] },
+        { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName'] },
       ],
     });
 
@@ -60,23 +83,43 @@ export const createNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const note = await Note.create({
-      ...req.body,
-      userId: req.user?.id,
-    });
+    const { contactId, companyId, dealId, description } = req.body;
 
-    // Log activity based on entity type
-    const description = `Note added: "${note.content.substring(0, 50)}${note.content.length > 50 ? '...' : ''}"`;
-
-    if (note.entityType === 'contact') {
-      await logContactActivity(note.entityId, 'note_added', req.user?.id, description);
-    } else if (note.entityType === 'deal') {
-      await logDealActivity(note.entityId, 'note_added', req.user?.id, description);
+    if (!isDatabaseConnected) {
+      const newNote = {
+        id: `demo-note-${Date.now()}`,
+        type: 'note',
+        contactId: contactId || null,
+        companyId: companyId || null,
+        dealId: dealId || null,
+        taskId: null,
+        emailId: null,
+        createdBy: 'demo-user-id',
+        description,
+        metadata: null,
+        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      demoActivities.push(newNote as any);
+      res.status(201).json(newNote);
+      return;
     }
 
-    const fullNote = await Note.findByPk(note.id, {
+    const { Activity, User } = await import('../models');
+
+    const note = await Activity.create({
+      type: 'note',
+      contactId,
+      companyId,
+      dealId,
+      description,
+      createdBy: req.user?.id || 'system',
+      timestamp: new Date(),
+    });
+
+    const fullNote = await Activity.findByPk(note.id, {
       include: [
-        { model: User, as: 'user', attributes: ['id', 'fullName'] },
+        { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName'] },
       ],
     });
 
@@ -92,22 +135,39 @@ export const updateNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const note = await Note.findByPk(req.params.id);
+    if (!isDatabaseConnected) {
+      const index = demoActivities.findIndex(a => a.id === req.params.id && a.type === 'note');
+      if (index === -1) {
+        throw new AppError('Note not found', 404);
+      }
+      demoActivities[index] = {
+        ...demoActivities[index],
+        description: req.body.description,
+      };
+      res.json(demoActivities[index]);
+      return;
+    }
+
+    const { Activity, User } = await import('../models');
+
+    const note = await Activity.findOne({
+      where: { id: req.params.id, type: 'note' },
+    });
 
     if (!note) {
       throw new AppError('Note not found', 404);
     }
 
     // Only allow the note creator to update
-    if (note.userId !== req.user?.id) {
+    if (note.createdBy !== req.user?.id) {
       throw new AppError('You can only edit your own notes', 403);
     }
 
-    await note.update({ content: req.body.content });
+    await note.update({ description: req.body.description });
 
-    const fullNote = await Note.findByPk(note.id, {
+    const fullNote = await Activity.findByPk(note.id, {
       include: [
-        { model: User, as: 'user', attributes: ['id', 'fullName'] },
+        { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName'] },
       ],
     });
 
@@ -123,14 +183,28 @@ export const deleteNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const note = await Note.findByPk(req.params.id);
+    if (!isDatabaseConnected) {
+      const index = demoActivities.findIndex(a => a.id === req.params.id && a.type === 'note');
+      if (index === -1) {
+        throw new AppError('Note not found', 404);
+      }
+      demoActivities.splice(index, 1);
+      res.status(204).send();
+      return;
+    }
+
+    const { Activity } = await import('../models');
+
+    const note = await Activity.findOne({
+      where: { id: req.params.id, type: 'note' },
+    });
 
     if (!note) {
       throw new AppError('Note not found', 404);
     }
 
     // Only allow the note creator or admin to delete
-    if (note.userId !== req.user?.id && req.user?.role !== 'admin') {
+    if (note.createdBy !== req.user?.id && req.user?.role !== 'admin') {
       throw new AppError('You can only delete your own notes', 403);
     }
 

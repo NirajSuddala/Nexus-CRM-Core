@@ -14,33 +14,40 @@ export const getDashboardStats = async (
       return;
     }
 
-    const { Deal, Task, Contact, Company } = await import('../models');
+    const { Deal, Task, Contact, Company, PipelineStage } = await import('../models');
     const { Op } = await import('sequelize');
+
+    // Get closed stages
+    const closedWonStages = await PipelineStage.findAll({ where: { name: 'Closed Won' } });
+    const closedLostStages = await PipelineStage.findAll({ where: { name: 'Closed Lost' } });
+    const closedWonIds = closedWonStages.map(s => s.id);
+    const closedLostIds = closedLostStages.map(s => s.id);
+    const closedIds = [...closedWonIds, ...closedLostIds];
 
     // Total Deal Value in Pipeline (excluding closed deals)
     const pipelineValue = await Deal.sum('amount', {
       where: {
-        stage: { [Op.notIn]: ['closed_won', 'closed_lost'] },
+        stageId: { [Op.notIn]: closedIds },
       },
     });
 
     // Won deals total
     const wonDealsValue = await Deal.sum('amount', {
-      where: { stage: 'closed_won' },
+      where: { stageId: { [Op.in]: closedWonIds } },
     });
 
     // Lost deals total
     const lostDealsValue = await Deal.sum('amount', {
-      where: { stage: 'closed_lost' },
+      where: { stageId: { [Op.in]: closedLostIds } },
     });
 
     // Win/Loss counts
     const wonDealsCount = await Deal.count({
-      where: { stage: 'closed_won' },
+      where: { stageId: { [Op.in]: closedWonIds } },
     });
 
     const lostDealsCount = await Deal.count({
-      where: { stage: 'closed_lost' },
+      where: { stageId: { [Op.in]: closedLostIds } },
     });
 
     // Total counts
@@ -92,35 +99,43 @@ export const getDashboardStats = async (
 };
 
 export const getDealsByStageStats = async (
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
     if (!isDatabaseConnected) {
-      const stages = ['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
-      const stats = stages.map(stage => {
-        const stageDeals = demoDeals.filter(d => d.stage === stage);
-        return {
-          stage,
-          count: stageDeals.length,
-          totalValue: stageDeals.reduce((sum, d) => sum + (d.amount || 0), 0),
-        };
+      // Group by stageName for demo data
+      const stageGroups: Record<string, { count: number; totalValue: number }> = {};
+      demoDeals.forEach(deal => {
+        const stageName = deal.stageName || 'Unknown';
+        if (!stageGroups[stageName]) {
+          stageGroups[stageName] = { count: 0, totalValue: 0 };
+        }
+        stageGroups[stageName].count++;
+        stageGroups[stageName].totalValue += deal.amount || 0;
       });
+
+      const stats = Object.entries(stageGroups).map(([stage, data]) => ({
+        stage,
+        count: data.count,
+        totalValue: data.totalValue,
+      }));
       res.json(stats);
       return;
     }
 
-    const { Deal } = await import('../models');
+    const { Deal, PipelineStage } = await import('../models');
     const sequelize = (await import('../config/database')).default;
 
     const stats = await Deal.findAll({
       attributes: [
-        'stage',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+        'stageId',
+        [sequelize.fn('COUNT', sequelize.col('Deal.id')), 'count'],
         [sequelize.fn('SUM', sequelize.col('amount')), 'totalValue'],
       ],
-      group: ['stage'],
+      include: [{ model: PipelineStage, as: 'stage', attributes: ['name'] }],
+      group: ['Deal.stageId', 'stage.id'],
     });
 
     res.json(stats);
@@ -130,7 +145,7 @@ export const getDealsByStageStats = async (
 };
 
 export const getContactsByLifecycleStats = async (
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -175,12 +190,13 @@ export const getRecentDeals = async (
       return;
     }
 
-    const { Deal, Company, Contact } = await import('../models');
+    const { Deal, Company, Contact, PipelineStage } = await import('../models');
 
     const deals = await Deal.findAll({
       include: [
         { model: Company, as: 'company', attributes: ['id', 'name'] },
-        { model: Contact, as: 'contact', attributes: ['id', 'fullName'] },
+        { model: Contact, as: 'contact', attributes: ['id', 'firstName', 'lastName'] },
+        { model: PipelineStage, as: 'stage', attributes: ['id', 'name'] },
       ],
       order: [['createdAt', 'DESC']],
       limit,
@@ -201,13 +217,13 @@ export const getWinLossOverTime = async (
     if (!isDatabaseConnected) {
       // Return demo win/loss data
       res.json([
-        { month: new Date().toISOString(), stage: 'closed_won', count: 1, totalValue: 80000 },
-        { month: new Date().toISOString(), stage: 'closed_lost', count: 1, totalValue: 35000 },
+        { month: new Date().toISOString(), stageName: 'Closed Won', count: 1, totalValue: 80000 },
+        { month: new Date().toISOString(), stageName: 'Closed Lost', count: 1, totalValue: 35000 },
       ]);
       return;
     }
 
-    const { Deal } = await import('../models');
+    const { Deal, PipelineStage } = await import('../models');
     const { Op } = await import('sequelize');
     const sequelize = (await import('../config/database')).default;
 
@@ -215,19 +231,26 @@ export const getWinLossOverTime = async (
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
 
+    // Get closed stage IDs
+    const closedStages = await PipelineStage.findAll({
+      where: { name: { [Op.in]: ['Closed Won', 'Closed Lost'] } },
+    });
+    const closedStageIds = closedStages.map(s => s.id);
+
     const deals = await Deal.findAll({
       attributes: [
-        [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('created_at')), 'month'],
-        'stage',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+        [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('Deal.created_at')), 'month'],
+        'stageId',
+        [sequelize.fn('COUNT', sequelize.col('Deal.id')), 'count'],
         [sequelize.fn('SUM', sequelize.col('amount')), 'totalValue'],
       ],
+      include: [{ model: PipelineStage, as: 'stage', attributes: ['name'] }],
       where: {
-        stage: { [Op.in]: ['closed_won', 'closed_lost'] },
+        stageId: { [Op.in]: closedStageIds },
         createdAt: { [Op.gte]: startDate },
       },
-      group: [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('created_at')), 'stage'],
-      order: [[sequelize.fn('DATE_TRUNC', 'month', sequelize.col('created_at')), 'ASC']],
+      group: [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('Deal.created_at')), 'Deal.stageId', 'stage.id'],
+      order: [[sequelize.fn('DATE_TRUNC', 'month', sequelize.col('Deal.created_at')), 'ASC']],
       raw: true,
     });
 

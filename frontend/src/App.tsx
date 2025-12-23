@@ -19,6 +19,15 @@ import TaskList from './pages/tasks/TaskList';
 import TaskDetail from './pages/tasks/TaskDetail';
 import Reports from './pages/reports/Reports';
 
+// New Feature Pages
+import ProjectList from './pages/projects/ProjectList';
+import TicketList from './pages/tickets/TicketList';
+import SurveyList from './pages/surveys/SurveyList';
+import HealthScoreList from './pages/health-scores/HealthScoreList';
+import EmailSequenceList from './pages/email-sequences/EmailSequenceList';
+import AutomationList from './pages/automations/AutomationList';
+import PipelineList from './pages/pipelines/PipelineList';
+
 // Demo mode - no authentication required
 const DEMO_MODE = true;
 
@@ -45,6 +54,27 @@ const AppRoutes: React.FC = () => {
         {/* Tasks */}
         <Route path="tasks" element={<TaskList />} />
         <Route path="tasks/:id" element={<TaskDetail />} />
+
+        {/* Projects */}
+        <Route path="projects" element={<ProjectList />} />
+
+        {/* Tickets */}
+        <Route path="tickets" element={<TicketList />} />
+
+        {/* Surveys */}
+        <Route path="surveys" element={<SurveyList />} />
+
+        {/* Health Scores */}
+        <Route path="health-scores" element={<HealthScoreList />} />
+
+        {/* Email Sequences */}
+        <Route path="email-sequences" element={<EmailSequenceList />} />
+
+        {/* Automations */}
+        <Route path="automations" element={<AutomationList />} />
+
+        {/* Pipelines */}
+        <Route path="pipelines" element={<PipelineList />} />
 
         {/* Reports */}
         <Route path="reports/*" element={<Reports />} />
