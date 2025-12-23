@@ -11,10 +11,10 @@ import { Contact, ContactFormData, Company } from '../../types';
 
 const contactSchema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  jobTitle: z.string().optional(),
-  companyId: z.string().optional().or(z.literal('')),
+  email: z.string().email('Invalid email address').min(1, 'Email is required'),
+  phone: z.string().min(1, 'Phone is required'),
+  jobTitle: z.string().min(1, 'Job title is required'),
+  companyId: z.string().min(1, 'Company is required'),
   lifecycleStage: z.enum(['lead', 'mql', 'sql', 'customer']).optional(),
 });
 
@@ -87,17 +87,11 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, cont
 
   const onSubmit = async (data: ContactFormData) => {
     try {
-      const cleanData = {
-        ...data,
-        email: data.email || null,
-        companyId: data.companyId || null,
-      };
-
       if (mode === 'edit' && contact) {
-        await dispatch(updateContact({ id: contact.id, data: cleanData })).unwrap();
+        await dispatch(updateContact({ id: contact.id, data })).unwrap();
         dispatch(addNotification({ type: 'success', title: 'Contact updated successfully' }));
       } else {
-        await dispatch(createContact(cleanData)).unwrap();
+        await dispatch(createContact(data)).unwrap();
         dispatch(addNotification({ type: 'success', title: 'Contact created successfully' }));
       }
       onClose();
@@ -123,7 +117,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, cont
 
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Email"
+            label="Email *"
             type="email"
             {...register('email')}
             error={errors.email?.message}
@@ -131,26 +125,29 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, cont
           />
 
           <Input
-            label="Phone"
+            label="Phone *"
             {...register('phone')}
+            error={errors.phone?.message}
             placeholder="+1 (555) 123-4567"
           />
         </div>
 
         <Input
-          label="Job Title"
+          label="Job Title *"
           {...register('jobTitle')}
+          error={errors.jobTitle?.message}
           placeholder="Sales Manager"
         />
 
         <Select
-          label="Company"
+          label="Company *"
           options={[
             { value: '', label: 'Select a company...' },
             ...companies.map((c) => ({ value: c.id, label: c.name })),
           ]}
           value={watch('companyId') || ''}
           onChange={(value) => setValue('companyId', value)}
+          error={errors.companyId?.message}
         />
 
         <Select

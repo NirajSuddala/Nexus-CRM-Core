@@ -11,12 +11,12 @@ import { Task, TaskFormData, Contact, Deal } from '../../types';
 
 const taskSchema = z.object({
   name: z.string().min(1, 'Task name is required'),
-  description: z.string().optional(),
-  dueDate: z.string().optional().or(z.literal('')),
-  priority: z.enum(['high', 'medium', 'low']).optional(),
-  status: z.enum(['todo', 'in_progress', 'completed']).optional(),
-  contactId: z.string().optional().or(z.literal('')),
-  dealId: z.string().optional().or(z.literal('')),
+  description: z.string().min(1, 'Description is required'),
+  dueDate: z.string().min(1, 'Due date is required'),
+  priority: z.enum(['high', 'medium', 'low']),
+  status: z.enum(['todo', 'in_progress', 'completed']),
+  contactId: z.string().min(1, 'Contact is required'),
+  dealId: z.string().min(1, 'Deal is required'),
 });
 
 interface TaskModalProps {
@@ -83,13 +83,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) =>
 
   const onSubmit = async (data: TaskFormData) => {
     try {
-      const cleanData = { ...data, contactId: data.contactId || null, dealId: data.dealId || null, dueDate: data.dueDate || null };
       if (mode === 'edit' && task) {
-        await dispatch(updateTask({ id: task.id, data: cleanData })).unwrap();
-        dispatch(addNotification({ type: 'success', title: 'Task updated' }));
+        await dispatch(updateTask({ id: task.id, data })).unwrap();
+        dispatch(addNotification({ type: 'success', title: 'Task updated successfully' }));
       } else {
-        await dispatch(createTask(cleanData)).unwrap();
-        dispatch(addNotification({ type: 'success', title: 'Task created' }));
+        await dispatch(createTask(data)).unwrap();
+        dispatch(addNotification({ type: 'success', title: 'Task created successfully' }));
       }
       onClose();
     } catch (error: any) {
@@ -100,17 +99,61 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) =>
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={mode === 'edit' ? 'Edit Task' : 'Add Task'} size="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input label="Task Name *" {...register('name')} error={errors.name?.message} placeholder="Follow up with client" />
-        <Textarea label="Description" {...register('description')} placeholder="Task details..." rows={3} />
+        <Input
+          label="Task Name *"
+          {...register('name')}
+          error={errors.name?.message}
+          placeholder="Follow up with client"
+        />
+
+        <Textarea
+          label="Description *"
+          {...register('description')}
+          error={errors.description?.message}
+          placeholder="Task details..."
+          rows={3}
+        />
+
         <div className="grid grid-cols-2 gap-4">
-          <Input label="Due Date" type="date" {...register('dueDate')} />
-          <Select label="Priority" options={PRIORITY_OPTIONS} value={watch('priority') || 'medium'} onChange={(v) => setValue('priority', v as any)} />
+          <Input
+            label="Due Date *"
+            type="date"
+            {...register('dueDate')}
+            error={errors.dueDate?.message}
+          />
+          <Select
+            label="Priority *"
+            options={PRIORITY_OPTIONS}
+            value={watch('priority') || 'medium'}
+            onChange={(v) => setValue('priority', v as any)}
+            error={errors.priority?.message}
+          />
         </div>
-        <Select label="Status" options={STATUS_OPTIONS} value={watch('status') || 'todo'} onChange={(v) => setValue('status', v as any)} />
-        <Select label="Related Contact" options={[{ value: '', label: 'Select a contact...' }, ...contacts.map((c) => ({ value: c.id, label: c.fullName }))]}
-          value={watch('contactId') || ''} onChange={(v) => setValue('contactId', v)} />
-        <Select label="Related Deal" options={[{ value: '', label: 'Select a deal...' }, ...deals.map((d) => ({ value: d.id, label: d.name }))]}
-          value={watch('dealId') || ''} onChange={(v) => setValue('dealId', v)} />
+
+        <Select
+          label="Status *"
+          options={STATUS_OPTIONS}
+          value={watch('status') || 'todo'}
+          onChange={(v) => setValue('status', v as any)}
+          error={errors.status?.message}
+        />
+
+        <Select
+          label="Related Contact *"
+          options={[{ value: '', label: 'Select a contact...' }, ...contacts.map((c) => ({ value: c.id, label: c.fullName }))]}
+          value={watch('contactId') || ''}
+          onChange={(v) => setValue('contactId', v)}
+          error={errors.contactId?.message}
+        />
+
+        <Select
+          label="Related Deal *"
+          options={[{ value: '', label: 'Select a deal...' }, ...deals.map((d) => ({ value: d.id, label: d.name }))]}
+          value={watch('dealId') || ''}
+          onChange={(v) => setValue('dealId', v)}
+          error={errors.dealId?.message}
+        />
+
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           <Button type="submit" isLoading={isLoading}>{mode === 'edit' ? 'Update' : 'Create'}</Button>

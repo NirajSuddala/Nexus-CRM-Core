@@ -11,12 +11,12 @@ import { Deal, DealFormData, Company, Contact } from '../../types';
 
 const dealSchema = z.object({
   name: z.string().min(1, 'Deal name is required'),
-  amount: z.string().optional().transform((val) => (val ? parseFloat(val) : null)),
-  stage: z.enum(['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost']).optional(),
-  closeDate: z.string().optional().or(z.literal('')),
-  probability: z.string().optional().transform((val) => (val ? parseInt(val) : 0)),
-  companyId: z.string().optional().or(z.literal('')),
-  contactId: z.string().optional().or(z.literal('')),
+  amount: z.string().min(1, 'Amount is required').transform((val) => parseFloat(val)),
+  stage: z.enum(['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost']),
+  closeDate: z.string().min(1, 'Close date is required'),
+  probability: z.string().min(1, 'Probability is required').transform((val) => parseInt(val)),
+  companyId: z.string().min(1, 'Company is required'),
+  contactId: z.string().min(1, 'Contact is required'),
 });
 
 interface DealModalProps {
@@ -89,20 +89,20 @@ const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal }) =>
     if (deal && mode === 'edit') {
       reset({
         name: deal.name,
-        amount: deal.amount || undefined,
+        amount: deal.amount?.toString() || '',
         stage: deal.stage,
         closeDate: deal.closeDate || '',
-        probability: deal.probability,
+        probability: deal.probability?.toString() || '',
         companyId: deal.companyId || '',
         contactId: deal.contactId || '',
       });
     } else {
       reset({
         name: '',
-        amount: undefined,
+        amount: '',
         stage: 'discovery',
         closeDate: '',
-        probability: 0,
+        probability: '',
         companyId: '',
         contactId: '',
       });
@@ -111,18 +111,11 @@ const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal }) =>
 
   const onSubmit = async (data: DealFormData) => {
     try {
-      const cleanData = {
-        ...data,
-        companyId: data.companyId || null,
-        contactId: data.contactId || null,
-        closeDate: data.closeDate || null,
-      };
-
       if (mode === 'edit' && deal) {
-        await dispatch(updateDeal({ id: deal.id, data: cleanData })).unwrap();
+        await dispatch(updateDeal({ id: deal.id, data })).unwrap();
         dispatch(addNotification({ type: 'success', title: 'Deal updated successfully' }));
       } else {
-        await dispatch(createDeal(cleanData)).unwrap();
+        await dispatch(createDeal(data)).unwrap();
         dispatch(addNotification({ type: 'success', title: 'Deal created successfully' }));
       }
       onClose();
@@ -148,53 +141,59 @@ const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal }) =>
 
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Amount"
+            label="Amount *"
             type="number"
             {...register('amount')}
+            error={errors.amount?.message}
             placeholder="50000"
           />
 
           <Select
-            label="Stage"
+            label="Stage *"
             options={STAGE_OPTIONS}
             value={watch('stage')}
             onChange={(value) => setValue('stage', value as any)}
+            error={errors.stage?.message}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Close Date"
+            label="Close Date *"
             type="date"
             {...register('closeDate')}
+            error={errors.closeDate?.message}
           />
 
           <Input
-            label="Probability (%)"
+            label="Probability (%) *"
             type="number"
             {...register('probability')}
+            error={errors.probability?.message}
             placeholder="50"
           />
         </div>
 
         <Select
-          label="Company"
+          label="Company *"
           options={[
             { value: '', label: 'Select a company...' },
             ...companies.map((c) => ({ value: c.id, label: c.name })),
           ]}
           value={watch('companyId') || ''}
           onChange={(value) => setValue('companyId', value)}
+          error={errors.companyId?.message}
         />
 
         <Select
-          label="Contact"
+          label="Contact *"
           options={[
             { value: '', label: 'Select a contact...' },
             ...contacts.map((c) => ({ value: c.id, label: c.fullName })),
           ]}
           value={watch('contactId') || ''}
           onChange={(value) => setValue('contactId', value)}
+          error={errors.contactId?.message}
         />
 
         <div className="flex justify-end gap-3 pt-4">

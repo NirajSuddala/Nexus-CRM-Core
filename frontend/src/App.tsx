@@ -27,9 +27,7 @@ import HealthScoreList from './pages/health-scores/HealthScoreList';
 import EmailSequenceList from './pages/email-sequences/EmailSequenceList';
 import AutomationList from './pages/automations/AutomationList';
 import PipelineList from './pages/pipelines/PipelineList';
-
-// Demo mode - no authentication required
-const DEMO_MODE = true;
+import Settings from './pages/settings/Settings';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -78,6 +76,9 @@ const AppRoutes: React.FC = () => {
 
         {/* Reports */}
         <Route path="reports/*" element={<Reports />} />
+
+        {/* Settings */}
+        <Route path="settings" element={<Settings />} />
       </Route>
 
       {/* Fallback */}
