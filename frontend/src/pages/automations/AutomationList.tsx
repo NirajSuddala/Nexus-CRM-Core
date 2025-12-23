@@ -70,11 +70,15 @@ const AutomationList: React.FC = () => {
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
           <div className="flex gap-4">
-            <div className="flex-1 max-w-md">
+            <div className="flex-1">
               <Input placeholder="Search automations..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
-            <Select options={TRIGGER_TYPE_OPTIONS} value={triggerType} onChange={setTriggerType} />
+            <div className="w-32">
+              <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            </div>
+            <div className="w-32">
+              <Select options={TRIGGER_TYPE_OPTIONS} value={triggerType} onChange={setTriggerType} />
+            </div>
           </div>
         </div>
 

@@ -597,13 +597,19 @@ export const getActivityLog = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
-    const { range = 'last7days', startDate, endDate, activityType, contactId, companyId, dealId } = req.query as any;
+    const { range = 'last7days', startDate, endDate, activityType, entityType, contactId, companyId, dealId } = req.query as any;
     const { start, end } = getDateRange(range, startDate, endDate);
 
     if (!isDatabaseConnected) {
       let filtered = [...demoActivities];
+      // Sort by createdAt descending
+      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
       if (activityType) {
         filtered = filtered.filter(a => a.type === activityType);
+      }
+      if (entityType) {
+        filtered = filtered.filter(a => a.entityType === entityType);
       }
       if (contactId) {
         filtered = filtered.filter(a => a.contactId === contactId);
@@ -615,13 +621,17 @@ export const getActivityLog = async (
         filtered = filtered.filter(a => a.dealId === dealId);
       }
 
+      // Apply pagination
+      const total = filtered.length;
+      const paginatedActivities = filtered.slice((page - 1) * limit, page * limit);
+
       res.json({
-        data: filtered,
+        data: paginatedActivities,
         pagination: {
           page,
           limit,
-          total: filtered.length,
-          pages: Math.ceil(filtered.length / limit),
+          total,
+          pages: Math.ceil(total / limit),
         },
         dateRange: { start, end },
       });
@@ -636,6 +646,7 @@ export const getActivityLog = async (
       createdAt: { [Op.between]: [start, end] },
     };
     if (activityType) where.type = activityType;
+    if (entityType) where.entityType = entityType;
     if (contactId) where.contactId = contactId;
     if (companyId) where.companyId = companyId;
     if (dealId) where.dealId = dealId;

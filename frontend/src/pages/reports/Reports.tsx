@@ -47,10 +47,15 @@ interface DateRange {
 const COLORS = ['#1e3a5f', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
 const STAGE_COLORS: Record<string, string> = {
   discovery: '#3b82f6',
+  Discovery: '#3b82f6',
   proposal: '#8b5cf6',
+  Proposal: '#8b5cf6',
   negotiation: '#f59e0b',
+  Negotiation: '#f59e0b',
   closed_won: '#22c55e',
+  'Closed Won': '#22c55e',
   closed_lost: '#ef4444',
+  'Closed Lost': '#ef4444',
 };
 const LIFECYCLE_COLORS: Record<string, string> = {
   lead: '#94a3b8',
@@ -137,10 +142,12 @@ const DealsByStageReport: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
   const [dateRange, setDateRange] = useState<DateRange>({ range: 'last30days' });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
       try {
         const params = new URLSearchParams({
           range: dateRange.range,
@@ -149,8 +156,9 @@ const DealsByStageReport: React.FC = () => {
         });
         const response = await api.get(`/reports/deals/by-stage?${params}`);
         setData(response.data.data || []);
-      } catch (error) {
-        console.error('Failed to fetch report:', error);
+      } catch (err) {
+        console.error('Failed to fetch report:', err);
+        setError('Failed to load report data. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -158,12 +166,16 @@ const DealsByStageReport: React.FC = () => {
     fetchData();
   }, [dateRange]);
 
-  const chartData = data.map((item: any) => ({
-    stage: item.stage.replace('_', ' ').charAt(0).toUpperCase() + item.stage.replace('_', ' ').slice(1),
-    count: parseInt(item.count),
-    totalValue: parseFloat(item.totalValue) || 0,
-    fill: STAGE_COLORS[item.stage] || COLORS[0],
-  }));
+  const chartData = data.map((item: any) => {
+    const stageName = item.stage || 'Unknown';
+    const formattedStage = stageName.replace(/_/g, ' ').charAt(0).toUpperCase() + stageName.replace(/_/g, ' ').slice(1);
+    return {
+      stage: formattedStage,
+      count: parseInt(item.count) || 0,
+      totalValue: parseFloat(item.totalValue) || 0,
+      fill: STAGE_COLORS[stageName] || COLORS[0],
+    };
+  });
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'csv') {
@@ -202,6 +214,15 @@ const DealsByStageReport: React.FC = () => {
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-red-600">{error}</p>
+            <Button variant="outline" className="mt-4" onClick={() => setDateRange({ ...dateRange })}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
@@ -440,8 +461,8 @@ const WinLossReport: React.FC = () => {
     fetchData();
   }, [dateRange]);
 
-  const wonData = data?.summary?.find((s: any) => s.stage === 'closed_won');
-  const lostData = data?.summary?.find((s: any) => s.stage === 'closed_lost');
+  const wonData = data?.summary?.find((s: any) => s.stage === 'closed_won' || s.stage === 'Closed Won');
+  const lostData = data?.summary?.find((s: any) => s.stage === 'closed_lost' || s.stage === 'Closed Lost');
   const wonCount = parseInt(wonData?.count || 0);
   const lostCount = parseInt(lostData?.count || 0);
   const totalCount = wonCount + lostCount;
@@ -1478,7 +1499,15 @@ const ReportsNav: React.FC = () => {
   return (
     <div className="w-64 bg-white border-r border-slate-200 h-full">
       <div className="p-4">
-        <h2 className="text-lg font-semibold text-slate-900">Reports</h2>
+        <NavLink
+          to="/reports"
+          end
+          className={({ isActive }) =>
+            `text-lg font-semibold ${isActive ? 'text-primary-700' : 'text-slate-900 hover:text-primary-600'}`
+          }
+        >
+          Reports
+        </NavLink>
       </div>
       <nav className="px-2">
         {navItems.map((category) => (

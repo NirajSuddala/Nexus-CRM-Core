@@ -29,8 +29,10 @@ import SurveyDetail from './pages/surveys/SurveyDetail';
 import HealthScoreList from './pages/health-scores/HealthScoreList';
 import HealthScoreDetail from './pages/health-scores/HealthScoreDetail';
 import EmailSequenceList from './pages/email-sequences/EmailSequenceList';
+import EmailSequenceDetail from './pages/email-sequences/EmailSequenceDetail';
 import AutomationList from './pages/automations/AutomationList';
 import PipelineList from './pages/pipelines/PipelineList';
+import PipelineDetail from './pages/pipelines/PipelineDetail';
 import Settings from './pages/settings/Settings';
 
 const AppRoutes: React.FC = () => {
@@ -75,12 +77,14 @@ const AppRoutes: React.FC = () => {
 
         {/* Email Sequences */}
         <Route path="email-sequences" element={<EmailSequenceList />} />
+        <Route path="email-sequences/:id" element={<EmailSequenceDetail />} />
 
         {/* Automations */}
         <Route path="automations" element={<AutomationList />} />
 
         {/* Pipelines */}
         <Route path="pipelines" element={<PipelineList />} />
+        <Route path="pipelines/:id" element={<PipelineDetail />} />
 
         {/* Reports */}
         <Route path="reports/*" element={<Reports />} />
