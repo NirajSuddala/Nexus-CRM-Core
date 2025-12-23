@@ -5,7 +5,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill //F //PID 1896)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx tsc --noEmit)"
     ]
   }
 }
