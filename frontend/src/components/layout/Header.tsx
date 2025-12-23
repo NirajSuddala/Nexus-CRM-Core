@@ -14,11 +14,16 @@ const Header: React.FC = () => {
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setQuery('');
+        setResults([]);
       }
     };
 
@@ -41,7 +46,17 @@ const Header: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await searchApi.global(searchQuery, 'all', 5);
-      setResults(response.data);
+      const data = response.data;
+
+      // Flatten results into a single array with type information
+      const flatResults = [
+        ...data.companies.map((item: any) => ({ ...item, type: 'companies' })),
+        ...data.contacts.map((item: any) => ({ ...item, type: 'contacts', name: item.fullName })),
+        ...data.deals.map((item: any) => ({ ...item, type: 'deals' })),
+        ...data.tasks.map((item: any) => ({ ...item, type: 'tasks' })),
+      ];
+
+      setResults(flatResults);
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -50,13 +65,15 @@ const Header: React.FC = () => {
   };
 
   const handleNavigate = (type: string, id: string) => {
+    setQuery('');
+    setResults([]);
     navigate(`/${type}/${id}`);
   };
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
       {/* Global Search */}
-      <div className="relative flex-1 max-w-xl">
+      <div className="relative flex-1 max-w-xl" ref={searchRef}>
         <div className="flex items-center gap-2 w-full px-4 py-2 text-slate-400 bg-slate-100 rounded-lg">
           <Search className="w-5 h-5 text-slate-400" />
           <input
@@ -76,16 +93,45 @@ const Header: React.FC = () => {
 
         {/* Search Results */}
         {query.length >= 2 && results.length > 0 && (
-          <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-lg shadow-lg mt-2 max-h-60 overflow-y-auto">
-            {results.map((result) => (
-              <button
-                key={result.id}
-                onClick={() => handleNavigate(result.type, result.id)}
-                className="w-full text-left px-4 py-2 hover:bg-slate-100"
-              >
-                {result.name}
-              </button>
-            ))}
+          <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-lg shadow-lg mt-2 max-h-96 overflow-y-auto">
+            {results.map((result) => {
+              const getTypeLabel = (type: string) => {
+                const labels: Record<string, string> = {
+                  companies: 'Company',
+                  contacts: 'Contact',
+                  deals: 'Deal',
+                  tasks: 'Task',
+                };
+                return labels[type] || type;
+              };
+
+              const getTypeColor = (type: string) => {
+                const colors: Record<string, string> = {
+                  companies: 'bg-blue-100 text-blue-700',
+                  contacts: 'bg-green-100 text-green-700',
+                  deals: 'bg-purple-100 text-purple-700',
+                  tasks: 'bg-orange-100 text-orange-700',
+                };
+                return colors[type] || 'bg-slate-100 text-slate-700';
+              };
+
+              return (
+                <button
+                  key={result.id}
+                  onClick={() => handleNavigate(result.type, result.id)}
+                  className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${getTypeColor(result.type)}`}>
+                      {getTypeLabel(result.type)}
+                    </span>
+                  </div>
+                  <div className="text-sm font-medium text-slate-900">
+                    {result.name}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
