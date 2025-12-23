@@ -162,6 +162,10 @@ const tasksSlice = createSlice({
       .addCase(createTask.fulfilled, (state, action) => {
         state.isLoading = false;
         state.tasks.unshift(action.payload);
+        if (state.pagination) {
+          state.pagination.total += 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit);
+        }
       })
       .addCase(createTask.rejected, (state, action) => {
         state.isLoading = false;
@@ -196,6 +200,10 @@ const tasksSlice = createSlice({
         state.tasks = state.tasks.filter((t) => t.id !== action.payload);
         if (state.currentTask?.id === action.payload) {
           state.currentTask = null;
+        }
+        if (state.pagination && state.pagination.total > 0) {
+          state.pagination.total -= 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit) || 1;
         }
       })
       .addCase(deleteTask.rejected, (state, action) => {

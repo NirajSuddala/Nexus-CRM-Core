@@ -197,6 +197,7 @@ export const demoDeals = [
     pipelineId: 'demo-pipeline-1',
     stageId: 'demo-stage-3',
     stageName: 'Negotiation', // For UI display
+    stage: 'negotiation', // For frontend Redux store
     amount: 150000,
     probability: 70,
     expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -204,7 +205,7 @@ export const demoDeals = [
     closedAt: null,
     company: demoCompanies[0],
     contact: demoContacts[0],
-    stage: demoPipelineStages[2],
+    pipelineStage: demoPipelineStages[2],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -216,6 +217,7 @@ export const demoDeals = [
     pipelineId: 'demo-pipeline-1',
     stageId: 'demo-stage-2',
     stageName: 'Proposal',
+    stage: 'proposal',
     amount: 45000,
     probability: 50,
     expectedCloseDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
@@ -223,7 +225,7 @@ export const demoDeals = [
     closedAt: null,
     company: demoCompanies[1],
     contact: demoContacts[1],
-    stage: demoPipelineStages[1],
+    pipelineStage: demoPipelineStages[1],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -235,6 +237,7 @@ export const demoDeals = [
     pipelineId: 'demo-pipeline-1',
     stageId: 'demo-stage-1',
     stageName: 'Discovery',
+    stage: 'discovery',
     amount: 25000,
     probability: 30,
     expectedCloseDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
@@ -242,7 +245,7 @@ export const demoDeals = [
     closedAt: null,
     company: demoCompanies[2],
     contact: demoContacts[2],
-    stage: demoPipelineStages[0],
+    pipelineStage: demoPipelineStages[0],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -254,6 +257,7 @@ export const demoDeals = [
     pipelineId: 'demo-pipeline-1',
     stageId: 'demo-stage-4',
     stageName: 'Closed Won',
+    stage: 'closed_won',
     amount: 80000,
     probability: 100,
     expectedCloseDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -261,7 +265,7 @@ export const demoDeals = [
     closedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     company: demoCompanies[0],
     contact: demoContacts[0],
-    stage: demoPipelineStages[3],
+    pipelineStage: demoPipelineStages[3],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -273,6 +277,7 @@ export const demoDeals = [
     pipelineId: 'demo-pipeline-1',
     stageId: 'demo-stage-5',
     stageName: 'Closed Lost',
+    stage: 'closed_lost',
     amount: 35000,
     probability: 0,
     expectedCloseDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
@@ -280,7 +285,7 @@ export const demoDeals = [
     closedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
     company: demoCompanies[1],
     contact: demoContacts[1],
-    stage: demoPipelineStages[4],
+    pipelineStage: demoPipelineStages[4],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -409,12 +414,12 @@ export const getStageNameById = (stageId: string): string => {
 };
 
 // Helper to get deals by stage name (for backwards compatibility)
-export const demoDealsByStage = {
-  discovery: demoDeals.filter(d => d.stageName === 'Discovery'),
-  proposal: demoDeals.filter(d => d.stageName === 'Proposal'),
-  negotiation: demoDeals.filter(d => d.stageName === 'Negotiation'),
-  closed_won: demoDeals.filter(d => d.stageName === 'Closed Won'),
-  closed_lost: demoDeals.filter(d => d.stageName === 'Closed Lost'),
+export const demoDealsByStage: Record<string, typeof demoDeals> = {
+  discovery: demoDeals.filter(d => d.stage === 'discovery'),
+  proposal: demoDeals.filter(d => d.stage === 'proposal'),
+  negotiation: demoDeals.filter(d => d.stage === 'negotiation'),
+  closed_won: demoDeals.filter(d => d.stage === 'closed_won'),
+  closed_lost: demoDeals.filter(d => d.stage === 'closed_lost'),
 };
 
 // =====================
@@ -971,6 +976,8 @@ export const demoHealthScores = [
     score: 85,
     npsScore: 9,
     csatScore: 4.5,
+    cesScore: 6.2,
+    customSurveyScore: 82,
     engagementScore: 90,
     riskLevel: 'excellent',
     calculatedAt: new Date().toISOString(),
@@ -983,6 +990,8 @@ export const demoHealthScores = [
     score: 65,
     npsScore: 7,
     csatScore: null,
+    cesScore: 4.5,
+    customSurveyScore: 68,
     engagementScore: 60,
     riskLevel: 'caution',
     calculatedAt: new Date().toISOString(),
@@ -995,6 +1004,8 @@ export const demoHealthScores = [
     score: 45,
     npsScore: null,
     csatScore: null,
+    cesScore: null,
+    customSurveyScore: null,
     engagementScore: 40,
     riskLevel: 'at_risk',
     calculatedAt: new Date().toISOString(),
@@ -1115,36 +1126,75 @@ export const demoEmails = [
   },
 ];
 
-// Update dashboard stats to include new metrics
-export const demoDashboardStats = {
-  // Sales metrics
-  pipelineValue: 220000,
-  wonDealsValue: 80000,
-  lostDealsValue: 35000,
-  wonDealsCount: 1,
-  lostDealsCount: 1,
-  winRate: 50,
-  // Entity counts
-  totalCompanies: 3,
-  totalContacts: 5,
-  totalDeals: 5,
-  totalTasks: 4,
-  totalProjects: 3,
-  totalTickets: 4,
-  // Task metrics
-  upcomingTasksCount: 3,
-  overdueTasksCount: 0,
-  // Ticket metrics
-  openTicketsCount: 2,
-  resolvedTicketsCount: 1,
-  avgTicketResolutionHours: 48,
-  // Health metrics
-  avgHealthScore: 65,
-  atRiskCustomers: 1,
-  // Survey metrics
-  avgNpsScore: 8,
-  npsPromoters: 1,
-  npsPassives: 1,
-  npsDetractors: 0,
-  surveyResponseRate: 60,
+// Dynamic dashboard stats calculation
+export const getDemoDashboardStats = () => {
+  const today = new Date();
+  const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  // Calculate pipeline value (non-closed deals)
+  const pipelineDeals = demoDeals.filter(d => d.stage !== 'closed_won' && d.stage !== 'closed_lost');
+  const pipelineValue = pipelineDeals.reduce((sum, d) => sum + (d.amount || 0), 0);
+
+  // Calculate won/lost deals
+  const wonDeals = demoDeals.filter(d => d.stage === 'closed_won');
+  const lostDeals = demoDeals.filter(d => d.stage === 'closed_lost');
+  const wonDealsValue = wonDeals.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const lostDealsValue = lostDeals.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const wonDealsCount = wonDeals.length;
+  const lostDealsCount = lostDeals.length;
+  const winRate = wonDealsCount + lostDealsCount > 0
+    ? Math.round((wonDealsCount / (wonDealsCount + lostDealsCount)) * 100)
+    : 0;
+
+  // Calculate task metrics
+  const openTasks = demoTasks.filter(t => t.status !== 'completed');
+  const upcomingTasks = openTasks.filter(t => {
+    if (!t.dueDate) return false;
+    const dueDate = new Date(t.dueDate);
+    return dueDate >= today && dueDate <= nextWeek;
+  });
+  const overdueTasks = openTasks.filter(t => {
+    if (!t.dueDate) return false;
+    return new Date(t.dueDate) < today;
+  });
+
+  // Calculate ticket metrics
+  const openTickets = demoTickets.filter(t => t.status === 'open' || t.status === 'in_progress');
+  const resolvedTickets = demoTickets.filter(t => t.status === 'closed' || t.status === 'resolved');
+
+  return {
+    // Sales metrics
+    pipelineValue,
+    wonDealsValue,
+    lostDealsValue,
+    wonDealsCount,
+    lostDealsCount,
+    winRate,
+    // Entity counts
+    totalCompanies: demoCompanies.length,
+    totalContacts: demoContacts.length,
+    totalDeals: demoDeals.length,
+    totalTasks: demoTasks.length,
+    totalProjects: demoProjects.length,
+    totalTickets: demoTickets.length,
+    // Task metrics
+    upcomingTasksCount: upcomingTasks.length,
+    overdueTasksCount: overdueTasks.length,
+    // Ticket metrics
+    openTicketsCount: openTickets.length,
+    resolvedTicketsCount: resolvedTickets.length,
+    avgTicketResolutionHours: 48,
+    // Health metrics
+    avgHealthScore: Math.round(demoHealthScores.reduce((sum, h) => sum + h.score, 0) / demoHealthScores.length),
+    atRiskCustomers: demoHealthScores.filter(h => h.riskLevel === 'at_risk').length,
+    // Survey metrics
+    avgNpsScore: Math.round(demoSurveyResponses.filter(r => r.surveyId === 'demo-survey-1').reduce((sum, r) => sum + (r.score || 0), 0) / demoSurveyResponses.filter(r => r.surveyId === 'demo-survey-1').length) || 0,
+    npsPromoters: demoSurveyResponses.filter(r => r.surveyId === 'demo-survey-1' && r.score >= 9).length,
+    npsPassives: demoSurveyResponses.filter(r => r.surveyId === 'demo-survey-1' && r.score >= 7 && r.score < 9).length,
+    npsDetractors: demoSurveyResponses.filter(r => r.surveyId === 'demo-survey-1' && r.score < 7).length,
+    surveyResponseRate: 60,
+  };
 };
+
+// For backwards compatibility
+export const demoDashboardStats = getDemoDashboardStats();

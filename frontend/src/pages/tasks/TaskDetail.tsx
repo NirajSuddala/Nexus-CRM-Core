@@ -60,7 +60,7 @@ const TaskDetail: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className={`text-2xl font-bold ${currentTask.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{currentTask.name}</h1>
+                <h1 className={`text-2xl font-bold ${currentTask.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{currentTask.title}</h1>
                 <Badge variant={getTaskStatusBadgeVariant(currentTask.status)}>{currentTask.status.replace('_', ' ')}</Badge>
                 <Badge variant={getTaskPriorityBadgeVariant(currentTask.priority)}>{currentTask.priority}</Badge>
               </div>
@@ -78,7 +78,7 @@ const TaskDetail: React.FC = () => {
             <Button variant="secondary" onClick={() => handleStatusChange('completed')}>Mark Complete</Button>
           )}
           {currentTask.status === 'completed' && (
-            <Button variant="outline" onClick={() => handleStatusChange('todo')}>Reopen</Button>
+            <Button variant="outline" onClick={() => handleStatusChange('open')}>Reopen</Button>
           )}
           <Button variant="outline" leftIcon={<Edit className="w-4 h-4" />}
             onClick={() => dispatch(openModal({ type: 'task', mode: 'edit', data: currentTask }))}>Edit</Button>
@@ -138,9 +138,9 @@ const TaskDetail: React.FC = () => {
           <Card>
             <CardHeader><CardTitle>Quick Actions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              {currentTask.status === 'todo' && <Button className="w-full" variant="secondary" onClick={() => handleStatusChange('in_progress')}>Start Working</Button>}
+              {currentTask.status === 'open' && <Button className="w-full" variant="secondary" onClick={() => handleStatusChange('in_progress')}>Start Working</Button>}
               {currentTask.status === 'in_progress' && <Button className="w-full" variant="secondary" onClick={() => handleStatusChange('completed')}>Complete</Button>}
-              {currentTask.status === 'completed' && <Button className="w-full" variant="outline" onClick={() => handleStatusChange('todo')}>Reopen Task</Button>}
+              {currentTask.status === 'completed' && <Button className="w-full" variant="outline" onClick={() => handleStatusChange('open')}>Reopen Task</Button>}
             </CardContent>
           </Card>
         </div>
@@ -148,7 +148,7 @@ const TaskDetail: React.FC = () => {
 
       <TaskModal isOpen={modal.type === 'task'} onClose={() => dispatch(openModal({ type: null, mode: null }))} mode={modal.mode} task={modal.data} />
       <ConfirmModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleDelete}
-        title="Delete Task" message={`Are you sure you want to delete "${currentTask.name}"?`} confirmText="Delete" variant="danger" />
+        title="Delete Task" message={`Are you sure you want to delete "${currentTask.title}"?`} confirmText="Delete" variant="danger" />
     </div>
   );
 };

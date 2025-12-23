@@ -168,9 +168,22 @@ export const createDeal = async (
 ): Promise<void> => {
   try {
     if (!isDatabaseConnected) {
+      // Map frontend stage string to stageName
+      const stageMap: Record<string, string> = {
+        discovery: 'Discovery',
+        proposal: 'Proposal',
+        negotiation: 'Negotiation',
+        closed_won: 'Closed Won',
+        closed_lost: 'Closed Lost',
+      };
+      const stageName = stageMap[req.body.stage] || 'Discovery';
+      const stage = req.body.stage || 'discovery';
+
       const newDeal = {
         id: `demo-deal-${Date.now()}`,
         ...req.body,
+        stage, // Keep the stage string for frontend
+        stageName, // For display
         stageId: req.body.stageId || 'demo-stage-1',
         probability: req.body.probability || 20,
         company: req.body.companyId ? demoCompanies.find(c => c.id === req.body.companyId) : null,
@@ -179,6 +192,10 @@ export const createDeal = async (
         updatedAt: new Date().toISOString(),
       };
       demoDeals.push(newDeal as any);
+      // Also add to demoDealsByStage for Kanban board
+      if (demoDealsByStage[stage]) {
+        demoDealsByStage[stage].unshift(newDeal as any);
+      }
       res.status(201).json(newDeal);
       return;
     }
@@ -203,16 +220,25 @@ export const createDeal = async (
       ],
     });
 
+    // Add stage string for frontend compatibility (overrides the stage association)
+    const fullDealJson = fullDeal?.toJSON() as any;
+    const stageString = fullDealJson?.stage?.name?.toLowerCase().replace(' ', '_') || req.body.stage || 'discovery';
+    const dealResponse = fullDeal ? {
+      ...fullDealJson,
+      pipelineStage: fullDealJson.stage, // Keep original stage object as pipelineStage
+      stage: stageString, // Override with string for frontend
+    } : null;
+
     // Emit socket event for real-time updates
     try {
       const { getIO } = await import('../socket');
       const io = getIO();
-      io.emit('deal:created', fullDeal);
+      io.emit('deal:created', dealResponse);
     } catch (e) {
       // Socket not initialized yet
     }
 
-    res.status(201).json(fullDeal);
+    res.status(201).json(dealResponse);
   } catch (error) {
     next(error);
   }
@@ -230,20 +256,39 @@ export const updateDeal = async (
         throw new AppError('Deal not found', 404);
       }
       const oldStage = demoDeals[index].stage;
-      demoDeals[index] = {
+
+      // Map stage to stageName if stage is provided
+      const stageMap: Record<string, string> = {
+        discovery: 'Discovery',
+        proposal: 'Proposal',
+        negotiation: 'Negotiation',
+        closed_won: 'Closed Won',
+        closed_lost: 'Closed Lost',
+      };
+
+      const updateData: any = {
         ...demoDeals[index],
         ...req.body,
         company: req.body.companyId ? demoCompanies.find(c => c.id === req.body.companyId) : demoDeals[index].company,
         contact: req.body.contactId ? demoContacts.find(c => c.id === req.body.contactId) : demoDeals[index].contact,
         updatedAt: new Date().toISOString()
       };
+
+      if (req.body.stage) {
+        updateData.stageName = stageMap[req.body.stage] || req.body.stage;
+      }
+
+      demoDeals[index] = updateData;
+
       // Update demoDealsByStage if stage changed
       if (req.body.stage && req.body.stage !== oldStage) {
-        demoDealsByStage[oldStage] = demoDealsByStage[oldStage].filter(d => d.id !== req.params.id);
+        if (demoDealsByStage[oldStage]) {
+          demoDealsByStage[oldStage] = demoDealsByStage[oldStage].filter(d => d.id !== req.params.id);
+        }
         if (demoDealsByStage[req.body.stage]) {
           demoDealsByStage[req.body.stage].unshift(demoDeals[index]);
         }
-      } else {
+      } else if (oldStage && demoDealsByStage[oldStage]) {
         // Update the deal in its current stage
         const stageIndex = demoDealsByStage[oldStage].findIndex(d => d.id === req.params.id);
         if (stageIndex !== -1) {
@@ -282,16 +327,25 @@ export const updateDeal = async (
       ],
     });
 
+    // Add stage string for frontend compatibility
+    const fullDealJson = fullDeal?.toJSON() as any;
+    const stageString = fullDealJson?.stage?.name?.toLowerCase().replace(' ', '_') || req.body.stage || 'discovery';
+    const dealResponse = fullDeal ? {
+      ...fullDealJson,
+      pipelineStage: fullDealJson.stage,
+      stage: stageString,
+    } : null;
+
     // Emit socket event for real-time updates
     try {
       const { getIO } = await import('../socket');
       const io = getIO();
-      io.emit('deal:updated', fullDeal);
+      io.emit('deal:updated', dealResponse);
     } catch (e) {
       // Socket not initialized yet
     }
 
-    res.json(fullDeal);
+    res.json(dealResponse);
   } catch (error) {
     next(error);
   }
@@ -303,21 +357,39 @@ export const updateDealStage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Frontend sends { stage: 'discovery' } - a string value
+    const newStage = req.body.stage;
+
     if (!isDatabaseConnected) {
       const index = demoDeals.findIndex(d => d.id === req.params.id);
       if (index === -1) {
         throw new AppError('Deal not found', 404);
       }
-      const previousStageId = demoDeals[index].stageId;
+
+      const stageMap: Record<string, string> = {
+        discovery: 'Discovery',
+        proposal: 'Proposal',
+        negotiation: 'Negotiation',
+        closed_won: 'Closed Won',
+        closed_lost: 'Closed Lost',
+      };
+
+      const oldStage = demoDeals[index].stage;
+      const newStageName = stageMap[newStage] || newStage;
+
       demoDeals[index] = {
         ...demoDeals[index],
-        stageId: req.body.stageId,
+        stage: newStage,
+        stageName: newStageName,
         updatedAt: new Date().toISOString()
       };
+
       // Update demoDealsByStage - remove from old stage and add to new stage
-      demoDealsByStage[previousStage] = demoDealsByStage[previousStage].filter(d => d.id !== req.params.id);
-      if (demoDealsByStage[req.body.stage]) {
-        demoDealsByStage[req.body.stage].unshift(demoDeals[index]);
+      if (oldStage && demoDealsByStage[oldStage]) {
+        demoDealsByStage[oldStage] = demoDealsByStage[oldStage].filter(d => d.id !== req.params.id);
+      }
+      if (newStage && demoDealsByStage[newStage]) {
+        demoDealsByStage[newStage].unshift(demoDeals[index]);
       }
       res.json(demoDeals[index]);
       return;
@@ -325,6 +397,17 @@ export const updateDealStage = async (
 
     const { Deal, Company, Contact, PipelineStage } = await import('../models');
     const { logDealActivity } = await import('../services/activityService');
+
+    // Find the PipelineStage by name matching the frontend stage string
+    const stageNameMap: Record<string, string> = {
+      discovery: 'Discovery',
+      proposal: 'Proposal',
+      negotiation: 'Negotiation',
+      closed_won: 'Closed Won',
+      closed_lost: 'Closed Lost',
+    };
+    const stageName = stageNameMap[newStage];
+    const pipelineStage = await PipelineStage.findOne({ where: { name: stageName } });
 
     const deal = await Deal.findByPk(req.params.id, {
       include: [{ model: PipelineStage, as: 'stage' }],
@@ -335,14 +418,16 @@ export const updateDealStage = async (
     }
 
     const previousStageId = deal.stageId;
-    await deal.update({ stageId: req.body.stageId });
+    if (pipelineStage) {
+      await deal.update({ stageId: pipelineStage.id });
+    }
 
     await logDealActivity(
       deal.id,
       'stage_changed',
       req.user?.id,
       `Deal "${deal.name}" stage changed`,
-      { previousStageId, newStageId: req.body.stageId }
+      { previousStageId, newStageId: pipelineStage?.id }
     );
 
     const fullDeal = await Deal.findByPk(deal.id, {
@@ -353,16 +438,25 @@ export const updateDealStage = async (
       ],
     });
 
+    // Add stage string for frontend compatibility
+    const fullDealJson = fullDeal?.toJSON() as any;
+    const stageString = fullDealJson?.stage?.name?.toLowerCase().replace(' ', '_') || newStage;
+    const dealResponse = fullDeal ? {
+      ...fullDealJson,
+      pipelineStage: fullDealJson.stage,
+      stage: stageString,
+    } : null;
+
     // Emit socket event for real-time updates
     try {
       const { getIO } = await import('../socket');
       const io = getIO();
-      io.emit('deal:stageChanged', { deal: fullDeal, previousStageId, newStageId: req.body.stageId });
+      io.emit('deal:stageChanged', { deal: dealResponse, previousStageId, newStageId: pipelineStage?.id });
     } catch (e) {
       // Socket not initialized yet
     }
 
-    res.json(fullDeal);
+    res.json(dealResponse);
   } catch (error) {
     next(error);
   }

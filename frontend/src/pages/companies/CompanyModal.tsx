@@ -4,16 +4,23 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { createCompany, updateCompany } from '../../features/companiesSlice';
-import { closeModal, addNotification } from '../../features/uiSlice';
-import { Modal, Button, Input } from '../../components/ui';
+import { addNotification } from '../../features/uiSlice';
+import { Modal, Button, Input, Select } from '../../components/ui';
 import { Company, CompanyFormData } from '../../types';
 
 const companySchema = z.object({
   name: z.string().min(1, 'Company name is required'),
-  domain: z.string().min(1, 'Domain is required'),
+  website: z.string().min(1, 'Website is required'),
   industry: z.string().min(1, 'Industry is required'),
-  linkedinUrl: z.string().url('Invalid LinkedIn URL').optional().or(z.literal('')),
-  revenue: z.string().optional().transform((val) => (val ? parseFloat(val) : null)),
+  size: z.string().optional().nullable(),
+  revenue: z.string().optional().transform((val) => val ? parseFloat(val) : null),
+  linkedin: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  country: z.string().optional().nullable(),
+  lifecycleStage: z.string().optional().nullable(),
 });
 
 interface CompanyModalProps {
@@ -23,6 +30,24 @@ interface CompanyModalProps {
   company?: Company | null;
 }
 
+const SIZE_OPTIONS = [
+  { value: '', label: 'Select size...' },
+  { value: '1-10', label: '1-10 employees' },
+  { value: '11-50', label: '11-50 employees' },
+  { value: '51-200', label: '51-200 employees' },
+  { value: '201-500', label: '201-500 employees' },
+  { value: '501-1000', label: '501-1000 employees' },
+  { value: '1000+', label: '1000+ employees' },
+];
+
+const LIFECYCLE_OPTIONS = [
+  { value: '', label: 'Select stage...' },
+  { value: 'lead', label: 'Lead' },
+  { value: 'prospect', label: 'Prospect' },
+  { value: 'customer', label: 'Customer' },
+  { value: 'churned', label: 'Churned' },
+];
+
 const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, mode, company }) => {
   const dispatch = useAppDispatch();
   const { isLoading } = useAppSelector((state) => state.companies);
@@ -31,6 +56,8 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, mode, comp
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CompanyFormData>({
     resolver: zodResolver(companySchema),
@@ -40,18 +67,32 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, mode, comp
     if (company && mode === 'edit') {
       reset({
         name: company.name,
-        domain: company.domain || '',
+        website: company.website || '',
         industry: company.industry || '',
-        linkedinUrl: company.linkedinUrl || '',
-        revenue: company.revenue || undefined,
+        size: company.size || '',
+        revenue: company.revenue?.toString() || '',
+        linkedin: company.linkedin || '',
+        phone: company.phone || '',
+        address: company.address || '',
+        city: company.city || '',
+        state: company.state || '',
+        country: company.country || '',
+        lifecycleStage: company.lifecycleStage || '',
       });
     } else {
       reset({
         name: '',
-        domain: '',
+        website: '',
         industry: '',
-        linkedinUrl: '',
-        revenue: undefined,
+        size: '',
+        revenue: '',
+        linkedin: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        country: '',
+        lifecycleStage: '',
       });
     }
   }, [company, mode, reset]);
@@ -86,33 +127,83 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, mode, comp
           placeholder="Acme Inc."
         />
 
-        <Input
-          label="Website *"
-          {...register('domain')}
-          error={errors.domain?.message}
-          placeholder="https://example.com"
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Website *"
+            {...register('website')}
+            error={errors.website?.message}
+            placeholder="https://example.com"
+          />
+
+          <Input
+            label="Industry *"
+            {...register('industry')}
+            error={errors.industry?.message}
+            placeholder="Technology, Healthcare, etc."
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Select
+            label="Company Size"
+            options={SIZE_OPTIONS}
+            value={watch('size') || ''}
+            onChange={(value) => setValue('size', value)}
+          />
+
+          <Input
+            label="Revenue"
+            type="number"
+            {...register('revenue')}
+            placeholder="1000000"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="LinkedIn"
+            {...register('linkedin')}
+            placeholder="https://linkedin.com/company/acme"
+          />
+
+          <Input
+            label="Phone"
+            {...register('phone')}
+            placeholder="+1 (555) 123-4567"
+          />
+        </div>
 
         <Input
-          label="Industry *"
-          {...register('industry')}
-          error={errors.industry?.message}
-          placeholder="Technology, Healthcare, etc."
+          label="Address"
+          {...register('address')}
+          placeholder="123 Main Street"
         />
 
-        <Input
-          label="LinkedIn URL"
-          {...register('linkedinUrl')}
-          error={errors.linkedinUrl?.message}
-          placeholder="https://linkedin.com/company/..."
-        />
+        <div className="grid grid-cols-3 gap-4">
+          <Input
+            label="City"
+            {...register('city')}
+            placeholder="San Francisco"
+          />
 
-        <Input
-          label="Annual Revenue"
-          type="number"
-          {...register('revenue')}
-          placeholder="1000000"
-          helperText="Enter amount in USD"
+          <Input
+            label="State"
+            {...register('state')}
+            placeholder="CA"
+          />
+
+          <Input
+            label="Country"
+            {...register('country')}
+            placeholder="USA"
+          />
+        </div>
+
+        <Select
+          label="Lifecycle Stage"
+          options={LIFECYCLE_OPTIONS}
+          value={watch('lifecycleStage') || ''}
+          onChange={(value) => setValue('lifecycleStage', value)}
         />
 
         <div className="flex justify-end gap-3 pt-4">

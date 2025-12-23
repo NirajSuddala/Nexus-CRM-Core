@@ -35,17 +35,29 @@ const ContactList: React.FC = () => {
   const { contacts, pagination, isLoading } = useAppSelector((state) => state.contacts);
   const { modal } = useAppSelector((state) => state.ui);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [lifecycleStage, setLifecycleStage] = useState('');
   const [page, setPage] = useState(1);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) {
+        setPage(1);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     dispatch(fetchContacts({
       page,
       limit: 20,
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       lifecycleStage: lifecycleStage || undefined,
     }));
-  }, [dispatch, page, search, lifecycleStage]);
+  }, [dispatch, page, debouncedSearch, lifecycleStage]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +82,7 @@ const ContactList: React.FC = () => {
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
           <form onSubmit={handleSearch} className="flex gap-4">
-            <div className="flex-1 max-w-md">
+            <div className="flex-1">
               <Input
                 placeholder="Search contacts..."
                 value={search}
@@ -78,11 +90,13 @@ const ContactList: React.FC = () => {
                 leftIcon={<Search className="w-4 h-4" />}
               />
             </div>
-            <Select
-              options={LIFECYCLE_OPTIONS}
-              value={lifecycleStage}
-              onChange={setLifecycleStage}
-            />
+            <div className="w-40">
+              <Select
+                options={LIFECYCLE_OPTIONS}
+                value={lifecycleStage}
+                onChange={setLifecycleStage}
+              />
+            </div>
           </form>
         </div>
 
@@ -90,6 +104,7 @@ const ContactList: React.FC = () => {
           <TableHead>
             <TableRow>
               <TableHeader>Contact</TableHeader>
+              <TableHeader>Job Title</TableHeader>
               <TableHeader>Company</TableHeader>
               <TableHeader>Email</TableHeader>
               <TableHeader>Phone</TableHeader>
@@ -99,11 +114,11 @@ const ContactList: React.FC = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">Loading...</TableCell>
+                <TableCell colSpan={6} className="text-center py-8">Loading...</TableCell>
               </TableRow>
             ) : contacts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                   No contacts found
                 </TableCell>
               </TableRow>
@@ -119,13 +134,13 @@ const ContactList: React.FC = () => {
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                         <User className="w-5 h-5 text-blue-600" />
                       </div>
-                      <div>
-                        <p className="font-medium text-slate-900">{contact.fullName}</p>
-                        {contact.jobTitle && (
-                          <p className="text-sm text-slate-500">{contact.jobTitle}</p>
-                        )}
-                      </div>
+                      <p className="font-medium text-slate-900">
+                        {contact.fullName || `${contact.firstName} ${contact.lastName}`.trim() || '-'}
+                      </p>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-slate-600">{contact.title || '-'}</span>
                   </TableCell>
                   <TableCell>{contact.company?.name || '-'}</TableCell>
                   <TableCell>

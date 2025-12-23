@@ -227,8 +227,12 @@ const dealsSlice = createSlice({
       .addCase(createDeal.fulfilled, (state, action) => {
         state.isLoading = false;
         state.deals.unshift(action.payload);
-        if (action.payload.stage) {
-          state.dealsByStage[action.payload.stage].unshift(action.payload);
+        if (action.payload.stage && action.payload.stage in state.dealsByStage) {
+          (state.dealsByStage as Record<string, Deal[]>)[action.payload.stage].unshift(action.payload);
+        }
+        if (state.pagination) {
+          state.pagination.total += 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit);
         }
       })
       .addCase(createDeal.rejected, (state, action) => {
@@ -257,13 +261,29 @@ const dealsSlice = createSlice({
       // Update stage
       .addCase(updateDealStage.fulfilled, (state, action) => {
         const deal = action.payload;
+
+        // Update in deals array if present
         const index = state.deals.findIndex((d) => d.id === deal.id);
         if (index !== -1) {
           const oldStage = state.deals[index].stage;
           state.deals[index] = deal;
-          // Update dealsByStage
-          state.dealsByStage[oldStage] = state.dealsByStage[oldStage].filter((d) => d.id !== deal.id);
-          state.dealsByStage[deal.stage].push(deal);
+          // If stage changed, update dealsByStage
+          if (oldStage !== deal.stage) {
+            (state.dealsByStage as Record<string, Deal[]>)[oldStage] = (state.dealsByStage as Record<string, Deal[]>)[oldStage].filter((d) => d.id !== deal.id);
+            if (!(state.dealsByStage as Record<string, Deal[]>)[deal.stage].find((d) => d.id === deal.id)) {
+              (state.dealsByStage as Record<string, Deal[]>)[deal.stage].push(deal);
+            }
+          }
+        }
+
+        // Also update in dealsByStage directly (for Kanban view where optimistic update already moved the deal)
+        // Find and update the deal in its new stage with server response data
+        const stageDeals = (state.dealsByStage as Record<string, Deal[]>)[deal.stage];
+        if (stageDeals) {
+          const stageIndex = stageDeals.findIndex((d) => d.id === deal.id);
+          if (stageIndex !== -1) {
+            stageDeals[stageIndex] = deal;
+          }
         }
       })
       // Delete
@@ -280,6 +300,10 @@ const dealsSlice = createSlice({
         }
         if (state.currentDeal?.id === action.payload) {
           state.currentDeal = null;
+        }
+        if (state.pagination && state.pagination.total > 0) {
+          state.pagination.total -= 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit) || 1;
         }
       })
       .addCase(deleteDeal.rejected, (state, action) => {

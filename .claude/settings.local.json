@@ -6,7 +6,8 @@
       "Bash(findstr:*)",
       "Bash(taskkill //F //PID 1896)",
       "Bash(curl:*)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(dir:*)"
     ]
   }
 }

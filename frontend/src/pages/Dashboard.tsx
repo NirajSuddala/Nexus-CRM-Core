@@ -33,12 +33,9 @@ import { fetchUpcomingTasks } from '../features/tasksSlice';
 import { Card, CardHeader, CardTitle, CardContent, Badge, getDealStageBadgeVariant, getTaskPriorityBadgeVariant } from '../components/ui';
 import { format } from 'date-fns';
 
-const COLORS = ['#1e3a5f', '#334e68', '#486581', '#627d98', '#829ab1'];
-const WIN_LOSS_COLORS = { closed_won: '#22c55e', closed_lost: '#ef4444' };
-
 const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { stats, dealsByStageStats, recentDeals, winLossOverTime, isLoading } = useAppSelector(
+  const { stats, dealsByStageStats, recentDeals } = useAppSelector(
     (state) => state.dashboard
   );
   const { upcomingTasks } = useAppSelector((state) => state.tasks);
@@ -255,7 +252,7 @@ const Dashboard: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <Calendar className="w-4 h-4 text-slate-400" />
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{task.name}</p>
+                        <p className="text-sm font-medium text-slate-900">{task.title}</p>
                         <p className="text-xs text-slate-500">
                           {task.dueDate && format(new Date(task.dueDate), 'MMM d, yyyy')}
                         </p>
@@ -303,8 +300,8 @@ const Dashboard: React.FC = () => {
                       <p className="text-sm font-medium text-slate-900">
                         {deal.amount ? formatCurrency(deal.amount) : '-'}
                       </p>
-                      <Badge variant={getDealStageBadgeVariant(typeof deal.stage === 'string' ? deal.stage : deal.stage?.name || '')} size="sm">
-                        {(typeof deal.stage === 'string' ? deal.stage : deal.stage?.name || 'Unknown').replace('_', ' ')}
+                      <Badge variant={getDealStageBadgeVariant(deal.stage)} size="sm">
+                        {deal.stage.replace('_', ' ')}
                       </Badge>
                     </div>
                   </Link>

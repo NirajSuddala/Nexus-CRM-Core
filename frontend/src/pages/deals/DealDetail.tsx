@@ -1,24 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Briefcase, DollarSign, Calendar, Percent, Building2, User, Edit, Trash2, Plus, FileText } from 'lucide-react';
+import { ArrowLeft, Briefcase, DollarSign, Calendar, Percent, Building2, User, Edit, Trash2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchDeal, deleteDeal, clearCurrentDeal } from '../../features/dealsSlice';
 import { openModal, addNotification } from '../../features/uiSlice';
-import { notesApi } from '../../services/api';
-import { Button, Card, CardHeader, CardTitle, CardContent, Badge, ConfirmModal, Textarea, getDealStageBadgeVariant } from '../../components/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Badge, ConfirmModal, getDealStageBadgeVariant } from '../../components/ui';
 import DealModal from './DealModal';
+import TaskModal from '../tasks/TaskModal';
 import ActivityFeed from '../../components/activity/ActivityFeed';
 
 const DealDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { currentDeal, activities, notes, isLoading } = useAppSelector((state) => state.deals);
+  const { currentDeal, isLoading } = useAppSelector((state) => state.deals);
   const { modal } = useAppSelector((state) => state.ui);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [newNote, setNewNote] = useState('');
-  const [isAddingNote, setIsAddingNote] = useState(false);
 
   useEffect(() => {
     if (id) dispatch(fetchDeal(id));
@@ -35,20 +33,6 @@ const DealDetail: React.FC = () => {
       dispatch(addNotification({ type: 'error', title: error || 'Failed to delete' }));
     }
     setShowDeleteModal(false);
-  };
-
-  const handleAddNote = async () => {
-    if (!newNote.trim() || !id) return;
-    setIsAddingNote(true);
-    try {
-      await notesApi.create({ content: newNote, entityType: 'deal', entityId: id });
-      dispatch(addNotification({ type: 'success', title: 'Note added' }));
-      setNewNote('');
-      dispatch(fetchDeal(id));
-    } catch (error) {
-      dispatch(addNotification({ type: 'error', title: 'Failed to add note' }));
-    }
-    setIsAddingNote(false);
   };
 
   const formatCurrency = (value: number | null) => {
@@ -104,36 +88,27 @@ const DealDetail: React.FC = () => {
               </dl>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5" />Log Note</CardTitle></CardHeader>
-            <CardContent>
-              <Textarea placeholder="Add a note..." value={newNote} onChange={(e) => setNewNote(e.target.value)} rows={3} />
-              <div className="flex justify-end mt-3"><Button onClick={handleAddNote} isLoading={isAddingNote} disabled={!newNote.trim()}>Save Note</Button></div>
-            </CardContent>
-          </Card>
-
-          {notes.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle>Notes ({notes.length})</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {notes.map((note) => (
-                    <div key={note.id} className="p-3 bg-slate-50 rounded-lg">
-                      <p className="text-slate-700 whitespace-pre-wrap">{note.content}</p>
-                      <p className="text-xs text-slate-500 mt-2">{format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
-        <div><ActivityFeed entityType="deal" entityId={currentDeal.id} /></div>
+        {/* Sidebar - Activity Feed */}
+        <div className="space-y-6">
+          <ActivityFeed entityType="deal" entityId={currentDeal.id} />
+        </div>
       </div>
 
       <DealModal isOpen={modal.type === 'deal'} onClose={() => dispatch(openModal({ type: null, mode: null }))} mode={modal.mode} deal={modal.data} />
+
+      <TaskModal
+        isOpen={modal.type === 'task'}
+        onClose={() => {
+          dispatch(openModal({ type: null, mode: null }));
+          // Refresh deal data to show new task
+          if (id) dispatch(fetchDeal(id));
+        }}
+        mode={modal.mode}
+        task={modal.data}
+      />
+
       <ConfirmModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleDelete}
         title="Delete Deal" message={`Are you sure you want to delete "${currentDeal.name}"?`} confirmText="Delete" variant="danger" />
     </div>

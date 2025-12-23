@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { isDatabaseConnected } from '../config/database';
-import { demoDashboardStats, demoDeals, demoContacts } from '../services/demoData';
+import { getDemoDashboardStats, demoDeals, demoContacts } from '../services/demoData';
 
 export const getDashboardStats = async (
   req: Request,
@@ -10,7 +10,7 @@ export const getDashboardStats = async (
   try {
     // Return demo data if database is not connected
     if (!isDatabaseConnected) {
-      res.json(demoDashboardStats);
+      res.json(getDemoDashboardStats());
       return;
     }
 
@@ -186,7 +186,11 @@ export const getRecentDeals = async (
     const limit = parseInt(req.query.limit as string) || 5;
 
     if (!isDatabaseConnected) {
-      res.json(demoDeals.slice(0, limit));
+      // Sort by createdAt descending and return limited results
+      const sortedDeals = [...demoDeals].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      res.json(sortedDeals.slice(0, limit));
       return;
     }
 
@@ -215,11 +219,28 @@ export const getWinLossOverTime = async (
 ): Promise<void> => {
   try {
     if (!isDatabaseConnected) {
-      // Return demo win/loss data
-      res.json([
-        { month: new Date().toISOString(), stageName: 'Closed Won', count: 1, totalValue: 80000 },
-        { month: new Date().toISOString(), stageName: 'Closed Lost', count: 1, totalValue: 35000 },
-      ]);
+      // Calculate win/loss data from demo deals
+      const wonDeals = demoDeals.filter(d => d.stage === 'closed_won');
+      const lostDeals = demoDeals.filter(d => d.stage === 'closed_lost');
+
+      const result = [];
+      if (wonDeals.length > 0) {
+        result.push({
+          month: new Date().toISOString(),
+          stageName: 'Closed Won',
+          count: wonDeals.length,
+          totalValue: wonDeals.reduce((sum, d) => sum + (d.amount || 0), 0),
+        });
+      }
+      if (lostDeals.length > 0) {
+        result.push({
+          month: new Date().toISOString(),
+          stageName: 'Closed Lost',
+          count: lostDeals.length,
+          totalValue: lostDeals.reduce((sum, d) => sum + (d.amount || 0), 0),
+        });
+      }
+      res.json(result);
       return;
     }
 

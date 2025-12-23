@@ -209,6 +209,10 @@ const projectsSlice = createSlice({
       .addCase(createProject.fulfilled, (state, action) => {
         state.isLoading = false;
         state.projects.unshift(action.payload);
+        if (state.pagination) {
+          state.pagination.total += 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit);
+        }
       })
       .addCase(createProject.rejected, (state, action) => {
         state.isLoading = false;
@@ -227,6 +231,10 @@ const projectsSlice = createSlice({
         state.projects = state.projects.filter((p) => p.id !== action.payload);
         if (state.currentProject?.id === action.payload) {
           state.currentProject = null;
+        }
+        if (state.pagination && state.pagination.total > 0) {
+          state.pagination.total -= 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit) || 1;
         }
       })
       .addCase(fetchMilestones.fulfilled, (state, action) => {

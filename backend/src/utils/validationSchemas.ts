@@ -25,22 +25,33 @@ export const resetPasswordSchema = z.object({
 // Company schemas
 export const createCompanySchema = z.object({
   name: z.string().min(1, 'Company name is required'),
-  domain: z.string().min(1, 'Domain is required'),
-  industry: z.string().min(1, 'Industry is required'),
-  linkedinUrl: z.string().url('Invalid LinkedIn URL').optional().nullable(),
-  revenue: z.number().positive('Revenue must be positive').optional().nullable(),
+  website: z.string().optional().nullable(),
+  industry: z.string().optional().nullable(),
+  size: z.string().optional().nullable(),
+  revenue: z.number().optional().nullable(),
+  linkedin: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  country: z.string().optional().nullable(),
+  lifecycleStage: z.string().optional().nullable(),
+  customFields: z.any().optional().nullable(),
 });
 
 export const updateCompanySchema = createCompanySchema.partial();
 
 // Contact schemas
 export const createContactSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address').min(1, 'Email is required'),
   phone: z.string().min(1, 'Phone is required'),
-  jobTitle: z.string().min(1, 'Job title is required'),
+  title: z.string().min(1, 'Job title is required'),
   companyId: z.string().min(1, 'Company is required'),
-  lifecycleStage: z.enum(['lead', 'mql', 'sql', 'customer']).optional().default('lead'),
+  lifecycleStage: z.enum(['lead', 'mql', 'sql', 'customer']).default('lead'),
+  customFields: z.any().optional().nullable(),
+  properties: z.any().optional().nullable(),
 });
 
 export const updateContactSchema = createContactSchema.partial();
@@ -48,12 +59,16 @@ export const updateContactSchema = createContactSchema.partial();
 // Deal schemas
 export const createDealSchema = z.object({
   name: z.string().min(1, 'Deal name is required'),
-  amount: z.number().positive('Amount must be positive').min(1, 'Amount is required'),
-  stage: z.enum(['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost']),
-  closeDate: z.string().min(1, 'Close date is required'),
-  probability: z.number().min(0, 'Probability must be at least 0').max(100, 'Probability must be at most 100'),
-  companyId: z.string().min(1, 'Company is required'),
-  contactId: z.string().min(1, 'Contact is required'),
+  amount: z.number().optional().nullable(),
+  pipelineId: z.string().optional().nullable(),
+  stageId: z.string().optional().nullable(),
+  stage: z.enum(['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost']).optional(),
+  closeDate: z.string().optional().nullable(),
+  expectedCloseDate: z.string().optional().nullable(),
+  probability: z.number().min(0).max(100).optional().nullable(),
+  companyId: z.string().optional().nullable(),
+  contactId: z.string().optional().nullable(),
+  properties: z.any().optional().nullable(),
 });
 
 export const updateDealSchema = createDealSchema.partial();
@@ -64,11 +79,11 @@ export const updateDealStageSchema = z.object({
 
 // Task schemas
 export const createTaskSchema = z.object({
-  name: z.string().min(1, 'Task name is required'),
+  title: z.string().min(1, 'Task title is required'),
   description: z.string().min(1, 'Description is required'),
   dueDate: z.string().min(1, 'Due date is required'),
   priority: z.enum(['high', 'medium', 'low']),
-  status: z.enum(['todo', 'in_progress', 'completed']),
+  status: z.enum(['open', 'in_progress', 'completed']).default('open'),
   contactId: z.string().min(1, 'Contact is required'),
   dealId: z.string().min(1, 'Deal is required'),
   assignedTo: z.string().optional().nullable(),

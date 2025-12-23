@@ -10,12 +10,13 @@ import { Modal, Button, Input, Select } from '../../components/ui';
 import { Contact, ContactFormData, Company } from '../../types';
 
 const contactSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address').min(1, 'Email is required'),
   phone: z.string().min(1, 'Phone is required'),
-  jobTitle: z.string().min(1, 'Job title is required'),
+  title: z.string().min(1, 'Job title is required'),
   companyId: z.string().min(1, 'Company is required'),
-  lifecycleStage: z.enum(['lead', 'mql', 'sql', 'customer']).optional(),
+  lifecycleStage: z.enum(['lead', 'mql', 'sql', 'customer']),
 });
 
 interface ContactModalProps {
@@ -66,20 +67,23 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, cont
   useEffect(() => {
     if (contact && mode === 'edit') {
       reset({
-        fullName: contact.fullName,
+        firstName: contact.firstName || '',
+        lastName: contact.lastName || '',
         email: contact.email || '',
         phone: contact.phone || '',
-        jobTitle: contact.jobTitle || '',
+        title: contact.title || '',
         companyId: contact.companyId || '',
         lifecycleStage: contact.lifecycleStage,
       });
     } else {
+      // For create mode, check if companyId is pre-populated (e.g., from Company detail page)
       reset({
-        fullName: '',
+        firstName: '',
+        lastName: '',
         email: '',
         phone: '',
-        jobTitle: '',
-        companyId: '',
+        title: '',
+        companyId: (contact as any)?.companyId || '',
         lifecycleStage: 'lead',
       });
     }
@@ -108,12 +112,21 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, cont
       size="lg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input
-          label="Full Name *"
-          {...register('fullName')}
-          error={errors.fullName?.message}
-          placeholder="John Doe"
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="First Name *"
+            {...register('firstName')}
+            error={errors.firstName?.message}
+            placeholder="John"
+          />
+
+          <Input
+            label="Last Name *"
+            {...register('lastName')}
+            error={errors.lastName?.message}
+            placeholder="Doe"
+          />
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -134,8 +147,8 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, cont
 
         <Input
           label="Job Title *"
-          {...register('jobTitle')}
-          error={errors.jobTitle?.message}
+          {...register('title')}
+          error={errors.title?.message}
           placeholder="Sales Manager"
         />
 
@@ -151,10 +164,11 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, cont
         />
 
         <Select
-          label="Lifecycle Stage"
+          label="Lifecycle Stage *"
           options={LIFECYCLE_OPTIONS}
           value={watch('lifecycleStage') || 'lead'}
           onChange={(value) => setValue('lifecycleStage', value as any)}
+          error={errors.lifecycleStage?.message}
         />
 
         <div className="flex justify-end gap-3 pt-4">

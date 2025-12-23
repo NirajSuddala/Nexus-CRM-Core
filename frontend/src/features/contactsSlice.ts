@@ -134,6 +134,10 @@ const contactsSlice = createSlice({
       .addCase(createContact.fulfilled, (state, action) => {
         state.isLoading = false;
         state.contacts.unshift(action.payload);
+        if (state.pagination) {
+          state.pagination.total += 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit);
+        }
       })
       .addCase(createContact.rejected, (state, action) => {
         state.isLoading = false;
@@ -168,6 +172,10 @@ const contactsSlice = createSlice({
         state.contacts = state.contacts.filter((c) => c.id !== action.payload);
         if (state.currentContact?.id === action.payload) {
           state.currentContact = null;
+        }
+        if (state.pagination && state.pagination.total > 0) {
+          state.pagination.total -= 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit) || 1;
         }
       })
       .addCase(deleteContact.rejected, (state, action) => {

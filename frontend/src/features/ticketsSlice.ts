@@ -174,6 +174,10 @@ const ticketsSlice = createSlice({
       .addCase(createTicket.fulfilled, (state, action) => {
         state.isLoading = false;
         state.tickets.unshift(action.payload);
+        if (state.pagination) {
+          state.pagination.total += 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit);
+        }
       })
       .addCase(createTicket.rejected, (state, action) => {
         state.isLoading = false;
@@ -192,6 +196,10 @@ const ticketsSlice = createSlice({
         state.tickets = state.tickets.filter((t) => t.id !== action.payload);
         if (state.currentTicket?.id === action.payload) {
           state.currentTicket = null;
+        }
+        if (state.pagination && state.pagination.total > 0) {
+          state.pagination.total -= 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit) || 1;
         }
       });
   },

@@ -1,8 +1,44 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
 import { isDatabaseConnected } from '../config/database';
-import { demoHealthScores, demoCompanies, demoContacts } from '../services/demoData';
+import { demoHealthScores, demoCompanies, demoContacts, demoSurveys, demoSurveyResponses } from '../services/demoData';
 import type { RiskLevel } from '../models/HealthScore';
+
+// Helper function to calculate survey scores for a company from demo data
+const calculateSurveyScoresForCompany = (companyId: string) => {
+  // Get all survey responses for this company
+  const companyResponses = demoSurveyResponses.filter(r => r.companyId === companyId);
+
+  // Calculate NPS score (from NPS type surveys)
+  const npsSurveyIds = demoSurveys.filter(s => s.type.toUpperCase() === 'NPS').map(s => s.id);
+  const npsResponses = companyResponses.filter(r => npsSurveyIds.includes(r.surveyId));
+  let npsScore: number | null = null;
+  if (npsResponses.length > 0) {
+    const promoters = npsResponses.filter(r => r.score >= 9).length;
+    const detractors = npsResponses.filter(r => r.score <= 6).length;
+    npsScore = Math.round(((promoters - detractors) / npsResponses.length) * 100);
+  }
+
+  // Calculate CSAT score (from CSAT type surveys) - average score normalized to 0-100
+  const csatSurveyIds = demoSurveys.filter(s => s.type.toUpperCase() === 'CSAT').map(s => s.id);
+  const csatResponses = companyResponses.filter(r => csatSurveyIds.includes(r.surveyId));
+  let csatScore: number | null = null;
+  if (csatResponses.length > 0) {
+    const avgScore = csatResponses.reduce((sum, r) => sum + (r.score || 0), 0) / csatResponses.length;
+    csatScore = Math.round((avgScore / 5) * 100); // Assuming 5-point scale
+  }
+
+  // Calculate CES score (from CES type surveys) - average score normalized to 0-100
+  const cesSurveyIds = demoSurveys.filter(s => s.type.toUpperCase() === 'CES').map(s => s.id);
+  const cesResponses = companyResponses.filter(r => cesSurveyIds.includes(r.surveyId));
+  let cesScore: number | null = null;
+  if (cesResponses.length > 0) {
+    const avgScore = cesResponses.reduce((sum, r) => sum + (r.score || 0), 0) / cesResponses.length;
+    cesScore = Math.round((avgScore / 7) * 100); // Assuming 7-point scale for CES
+  }
+
+  return { npsScore, csatScore, cesScore };
+};
 
 export const getHealthScores = async (
   req: Request,
@@ -25,8 +61,19 @@ export const getHealthScores = async (
       const start = (page - 1) * limit;
       const paged = filtered.slice(start, start + limit);
 
+      // Enrich health scores with calculated survey scores
+      const enrichedHealthScores = paged.map(hs => {
+        const surveyScores = calculateSurveyScoresForCompany(hs.companyId);
+        return {
+          ...hs,
+          npsScore: surveyScores.npsScore ?? hs.npsScore,
+          csatScore: surveyScores.csatScore ?? hs.csatScore,
+          cesScore: surveyScores.cesScore,
+        };
+      });
+
       res.json({
-        healthScores: paged,
+        healthScores: enrichedHealthScores,
         pagination: {
           page,
           limit,

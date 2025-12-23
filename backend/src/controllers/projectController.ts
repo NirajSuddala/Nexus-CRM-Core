@@ -28,8 +28,14 @@ export const getProjects = async (
       const start = (page - 1) * limit;
       const paged = filtered.slice(start, start + limit);
 
+      // Include milestones for each project
+      const projectsWithMilestones = paged.map(project => ({
+        ...project,
+        milestones: demoMilestones.filter(m => m.projectId === project.id),
+      }));
+
       res.json({
-        projects: paged,
+        projects: projectsWithMilestones,
         pagination: {
           page,
           limit,

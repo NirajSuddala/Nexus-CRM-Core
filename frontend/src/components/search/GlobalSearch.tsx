@@ -202,7 +202,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
                           <CheckSquare className="w-4 h-4 text-slate-400" />
                           <div>
                             <p className="text-sm font-medium text-slate-900">
-                              {task.name}
+                              {task.title}
                             </p>
                             <p className="text-xs text-slate-500">
                               {task.status} • {task.priority} priority

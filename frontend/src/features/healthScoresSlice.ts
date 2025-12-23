@@ -8,6 +8,8 @@ interface HealthScore {
   score: number;
   npsScore?: number;
   csatScore?: number;
+  cesScore?: number;
+  customSurveyScore?: number;
   engagementScore?: number;
   riskLevel: 'at_risk' | 'caution' | 'good' | 'excellent';
   calculatedAt: string;

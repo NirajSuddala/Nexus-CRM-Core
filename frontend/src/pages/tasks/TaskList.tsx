@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, CheckSquare, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, Search, CheckSquare, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchTasks, updateTask } from '../../features/tasksSlice';
@@ -10,7 +10,7 @@ import TaskModal from './TaskModal';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },
-  { value: 'todo', label: 'To Do' },
+  { value: 'open', label: 'Open' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
 ];
@@ -28,16 +28,28 @@ const TaskList: React.FC = () => {
   const { tasks, pagination, isLoading } = useAppSelector((state) => state.tasks);
   const { modal } = useAppSelector((state) => state.ui);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [page, setPage] = useState(1);
 
+  // Debounce search input
   useEffect(() => {
-    dispatch(fetchTasks({ page, limit: 20, search: search || undefined, status: status || undefined, priority: priority || undefined }));
-  }, [dispatch, page, search, status, priority]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) {
+        setPage(1);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    dispatch(fetchTasks({ page, limit: 20, search: debouncedSearch || undefined, status: status || undefined, priority: priority || undefined }));
+  }, [dispatch, page, debouncedSearch, status, priority]);
 
   const handleToggleComplete = async (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'completed' ? 'todo' : 'completed';
+    const newStatus = currentStatus === 'completed' ? 'open' : 'completed';
     try {
       await dispatch(updateTask({ id: taskId, data: { status: newStatus } })).unwrap();
       dispatch(addNotification({ type: 'success', title: `Task marked as ${newStatus.replace('_', ' ')}` }));
@@ -61,9 +73,9 @@ const TaskList: React.FC = () => {
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
           <div className="flex gap-4">
-            <div className="flex-1 max-w-md"><Input placeholder="Search tasks..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} /></div>
-            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
-            <Select options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
+            <div className="flex-1"><Input placeholder="Search tasks..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} /></div>
+            <div className="w-36"><Select options={STATUS_OPTIONS} value={status} onChange={setStatus} /></div>
+            <div className="w-36"><Select options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} /></div>
           </div>
         </div>
 
@@ -94,7 +106,7 @@ const TaskList: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className={`font-medium ${task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{task.name}</p>
+                      <p className={`font-medium ${task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{task.title}</p>
                       {task.description && <p className="text-sm text-slate-500 truncate max-w-xs">{task.description}</p>}
                     </div>
                   </TableCell>

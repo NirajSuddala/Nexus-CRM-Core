@@ -10,13 +10,13 @@ import { Modal, Button, Input, Select, Textarea } from '../../components/ui';
 import { Task, TaskFormData, Contact, Deal } from '../../types';
 
 const taskSchema = z.object({
-  name: z.string().min(1, 'Task name is required'),
-  description: z.string().min(1, 'Description is required'),
+  title: z.string().min(1, 'Task title is required'),
+  description: z.string().optional(),
   dueDate: z.string().min(1, 'Due date is required'),
-  priority: z.enum(['high', 'medium', 'low']),
-  status: z.enum(['todo', 'in_progress', 'completed']),
-  contactId: z.string().min(1, 'Contact is required'),
-  dealId: z.string().min(1, 'Deal is required'),
+  priority: z.enum(['high', 'medium', 'low'], { required_error: 'Priority is required' }),
+  status: z.enum(['open', 'in_progress', 'completed'], { required_error: 'Status is required' }),
+  contactId: z.string().optional(),
+  dealId: z.string().optional(),
 });
 
 interface TaskModalProps {
@@ -33,7 +33,7 @@ const PRIORITY_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: 'todo', label: 'To Do' },
+  { value: 'open', label: 'Open' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
 ];
@@ -46,7 +46,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) =>
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
-    defaultValues: { priority: 'medium', status: 'todo' },
+    defaultValues: { priority: 'medium', status: 'open' },
   });
 
   useEffect(() => {
@@ -68,7 +68,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) =>
   useEffect(() => {
     if (task && mode === 'edit') {
       reset({
-        name: task.name,
+        title: task.title,
         description: task.description || '',
         dueDate: task.dueDate || '',
         priority: task.priority,
@@ -77,7 +77,16 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) =>
         dealId: task.dealId || '',
       });
     } else {
-      reset({ name: '', description: '', dueDate: '', priority: 'medium', status: 'todo', contactId: '', dealId: '' });
+      // For create mode, check if contactId or dealId is pre-populated (e.g., from Contact/Deal detail page)
+      reset({
+        title: '',
+        description: '',
+        dueDate: '',
+        priority: 'medium',
+        status: 'open',
+        contactId: (task as any)?.contactId || '',
+        dealId: (task as any)?.dealId || '',
+      });
     }
   }, [task, mode, reset]);
 
@@ -100,14 +109,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) =>
     <Modal isOpen={isOpen} onClose={onClose} title={mode === 'edit' ? 'Edit Task' : 'Add Task'} size="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
-          label="Task Name *"
-          {...register('name')}
-          error={errors.name?.message}
+          label="Task Title *"
+          {...register('title')}
+          error={errors.title?.message}
           placeholder="Follow up with client"
         />
 
         <Textarea
-          label="Description *"
+          label="Description"
           {...register('description')}
           error={errors.description?.message}
           placeholder="Task details..."
@@ -133,21 +142,26 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) =>
         <Select
           label="Status *"
           options={STATUS_OPTIONS}
-          value={watch('status') || 'todo'}
+          value={watch('status') || 'open'}
           onChange={(v) => setValue('status', v as any)}
           error={errors.status?.message}
         />
 
         <Select
-          label="Related Contact *"
-          options={[{ value: '', label: 'Select a contact...' }, ...contacts.map((c) => ({ value: c.id, label: c.fullName }))]}
+          label="Related Contact"
+          options={[{ value: '', label: 'Select a contact...' }, ...contacts.map((c) => ({
+            value: c.id,
+            label: (c as any).firstName && (c as any).lastName
+              ? `${(c as any).firstName} ${(c as any).lastName}`
+              : c.fullName || c.email || 'Unknown'
+          }))]}
           value={watch('contactId') || ''}
           onChange={(v) => setValue('contactId', v)}
           error={errors.contactId?.message}
         />
 
         <Select
-          label="Related Deal *"
+          label="Related Deal"
           options={[{ value: '', label: 'Select a deal...' }, ...deals.map((d) => ({ value: d.id, label: d.name }))]}
           value={watch('dealId') || ''}
           onChange={(v) => setValue('dealId', v)}

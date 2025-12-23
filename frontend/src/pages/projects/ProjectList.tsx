@@ -28,6 +28,15 @@ const getStatusBadgeVariant = (status: string): 'default' | 'success' | 'warning
   }
 };
 
+// Calculate dynamic progress based on milestones
+const calculateProgress = (project: any): number => {
+  if (project.milestones && project.milestones.length > 0) {
+    const completedCount = project.milestones.filter((m: any) => m.status === 'completed').length;
+    return Math.round((completedCount / project.milestones.length) * 100);
+  }
+  return project.progress || 0;
+};
+
 const ProjectList: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -56,10 +65,10 @@ const ProjectList: React.FC = () => {
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
           <div className="flex gap-4">
-            <div className="flex-1 max-w-md">
+            <div className="flex-1">
               <Input placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            <div className="w-40"><Select options={STATUS_OPTIONS} value={status} onChange={setStatus} /></div>
           </div>
         </div>
 
@@ -94,14 +103,19 @@ const ProjectList: React.FC = () => {
                   </TableCell>
                   <TableCell>{project.company?.name || '-'}</TableCell>
                   <TableCell>
-                    <div className="w-full max-w-[120px]">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-primary-500 rounded-full" style={{ width: `${project.progress}%` }} />
+                    {(() => {
+                      const progress = calculateProgress(project);
+                      return (
+                        <div className="w-full max-w-[120px]">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary-500 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                            </div>
+                            <span className="text-sm text-slate-600">{progress}%</span>
+                          </div>
                         </div>
-                        <span className="text-sm text-slate-600">{project.progress}%</span>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">

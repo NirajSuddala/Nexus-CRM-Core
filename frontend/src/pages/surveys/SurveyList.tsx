@@ -76,11 +76,15 @@ const SurveyList: React.FC = () => {
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
           <div className="flex gap-4">
-            <div className="flex-1 max-w-md">
+            <div className="flex-1">
               <Input placeholder="Search surveys..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={TYPE_OPTIONS} value={type} onChange={setType} />
-            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            <div className="w-32">
+              <Select options={TYPE_OPTIONS} value={type} onChange={setType} />
+            </div>
+            <div className="w-32">
+              <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            </div>
           </div>
         </div>
 

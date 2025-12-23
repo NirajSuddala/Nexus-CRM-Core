@@ -22,10 +22,17 @@ export interface AuthState {
 export interface Company {
   id: string;
   name: string;
-  domain: string | null;
+  website: string | null;
   industry: string | null;
-  linkedinUrl: string | null;
+  size: string | null;
   revenue: number | null;
+  linkedin: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  lifecycleStage: string | null;
   contacts?: Contact[];
   deals?: Deal[];
   createdAt: string;
@@ -38,10 +45,12 @@ export type LifecycleStage = 'lead' | 'mql' | 'sql' | 'customer';
 export interface Contact {
   id: string;
   companyId: string | null;
-  fullName: string;
+  firstName: string;
+  lastName: string;
+  fullName?: string;
   email: string | null;
   phone: string | null;
-  jobTitle: string | null;
+  title: string | null;
   lifecycleStage: LifecycleStage;
   company?: Company;
   deals?: Deal[];
@@ -71,14 +80,14 @@ export interface Deal {
 
 // Task types
 export type TaskPriority = 'high' | 'medium' | 'low';
-export type TaskStatus = 'todo' | 'in_progress' | 'completed';
+export type TaskStatus = 'open' | 'in_progress' | 'completed';
 
 export interface Task {
   id: string;
   contactId: string | null;
   dealId: string | null;
   assignedTo: string | null;
-  name: string;
+  title: string;
   dueDate: string | null;
   priority: TaskPriority;
   status: TaskStatus;
@@ -91,7 +100,7 @@ export interface Task {
 }
 
 // Activity types
-export type EntityType = 'company' | 'contact' | 'deal' | 'task';
+export type EntityType = 'company' | 'contact' | 'deal' | 'task' | 'project' | 'ticket' | 'survey';
 
 export interface Activity {
   id: string;
@@ -171,39 +180,47 @@ export interface RegisterFormData {
 
 export interface CompanyFormData {
   name: string;
-  domain?: string | null;
-  industry?: string | null;
-  linkedinUrl?: string | null;
-  revenue?: number | null;
+  website: string;
+  industry: string;
+  size?: string | null;
+  revenue?: number | string | null;
+  linkedin?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  lifecycleStage?: string | null;
 }
 
 export interface ContactFormData {
-  fullName: string;
-  email?: string | null;
-  phone?: string | null;
-  jobTitle?: string | null;
-  companyId?: string | null;
-  lifecycleStage?: LifecycleStage;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  title: string;
+  companyId: string;
+  lifecycleStage: LifecycleStage;
 }
 
 export interface DealFormData {
   name: string;
-  amount?: number | null;
+  amount?: number | string | null;
   stage?: DealStage;
   closeDate?: string | null;
-  probability?: number;
+  probability?: number | string;
   companyId?: string | null;
   contactId?: string | null;
 }
 
 export interface TaskFormData {
-  name: string;
-  description?: string | null;
-  dueDate?: string | null;
-  priority?: TaskPriority;
-  status?: TaskStatus;
-  contactId?: string | null;
-  dealId?: string | null;
+  title: string;
+  description: string;
+  dueDate: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  contactId: string;
+  dealId: string;
   assignedTo?: string | null;
 }
 

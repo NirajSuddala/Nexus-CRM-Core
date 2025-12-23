@@ -32,9 +32,9 @@ const STAGES: { key: DealStage; label: string; color: string }[] = [
 const DealKanban: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { dealsByStage, isLoading } = useAppSelector((state) => state.deals);
+  const { dealsByStage } = useAppSelector((state) => state.deals);
   const { modal } = useAppSelector((state) => state.ui);
-  const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [, setActiveId] = React.useState<string | null>(null);
   const [activeDeal, setActiveDeal] = React.useState<Deal | null>(null);
 
   const sensors = useSensors(
@@ -49,7 +49,7 @@ const DealKanban: React.FC = () => {
     dispatch(fetchDealsByStage());
 
     // Subscribe to real-time updates
-    subscribeToDealUpdates((data) => {
+    subscribeToDealUpdates(() => {
       dispatch(fetchDealsByStage());
     });
 

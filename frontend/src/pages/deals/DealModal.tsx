@@ -4,17 +4,27 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { createDeal, updateDeal } from '../../features/dealsSlice';
-import { closeModal, addNotification } from '../../features/uiSlice';
+import { addNotification } from '../../features/uiSlice';
 import { companiesApi, contactsApi } from '../../services/api';
 import { Modal, Button, Input, Select } from '../../components/ui';
 import { Deal, DealFormData, Company, Contact } from '../../types';
 
 const dealSchema = z.object({
   name: z.string().min(1, 'Deal name is required'),
-  amount: z.string().min(1, 'Amount is required').transform((val) => parseFloat(val)),
-  stage: z.enum(['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost']),
+  amount: z.string().min(1, 'Amount is required').transform((val) => {
+    const num = parseFloat(val);
+    if (isNaN(num) || num < 0) throw new Error('Amount must be a positive number');
+    return num;
+  }),
+  stage: z.enum(['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost'], {
+    required_error: 'Stage is required',
+  }),
   closeDate: z.string().min(1, 'Close date is required'),
-  probability: z.string().min(1, 'Probability is required').transform((val) => parseInt(val)),
+  probability: z.string().min(1, 'Probability is required').transform((val) => {
+    const num = parseInt(val);
+    if (isNaN(num) || num < 0 || num > 100) throw new Error('Probability must be between 0 and 100');
+    return num;
+  }),
   companyId: z.string().min(1, 'Company is required'),
   contactId: z.string().min(1, 'Contact is required'),
 });
@@ -97,14 +107,15 @@ const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal }) =>
         contactId: deal.contactId || '',
       });
     } else {
+      // For create mode, check if companyId is pre-populated (e.g., from Company detail page)
       reset({
         name: '',
         amount: '',
         stage: 'discovery',
         closeDate: '',
         probability: '',
-        companyId: '',
-        contactId: '',
+        companyId: (deal as any)?.companyId || '',
+        contactId: (deal as any)?.contactId || '',
       });
     }
   }, [deal, mode, reset]);
@@ -151,7 +162,7 @@ const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal }) =>
           <Select
             label="Stage *"
             options={STAGE_OPTIONS}
-            value={watch('stage')}
+            value={watch('stage') || 'discovery'}
             onChange={(value) => setValue('stage', value as any)}
             error={errors.stage?.message}
           />
@@ -189,7 +200,12 @@ const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal }) =>
           label="Contact *"
           options={[
             { value: '', label: 'Select a contact...' },
-            ...contacts.map((c) => ({ value: c.id, label: c.fullName })),
+            ...contacts.map((c) => ({
+              value: c.id,
+              label: c.firstName && c.lastName
+                ? `${c.firstName} ${c.lastName}`
+                : c.fullName || c.email || 'Unknown'
+            })),
           ]}
           value={watch('contactId') || ''}
           onChange={(value) => setValue('contactId', value)}

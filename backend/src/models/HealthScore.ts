@@ -10,13 +10,15 @@ interface HealthScoreAttributes {
   score: number;
   npsScore: number | null;
   csatScore: number | null;
+  cesScore: number | null;
+  customSurveyScore: number | null;
   engagementScore: number | null;
   riskLevel: RiskLevel;
   calculatedAt: Date;
   updatedAt?: Date;
 }
 
-interface HealthScoreCreationAttributes extends Optional<HealthScoreAttributes, 'id' | 'companyId' | 'contactId' | 'npsScore' | 'csatScore' | 'engagementScore' | 'updatedAt'> {}
+interface HealthScoreCreationAttributes extends Optional<HealthScoreAttributes, 'id' | 'companyId' | 'contactId' | 'npsScore' | 'csatScore' | 'cesScore' | 'customSurveyScore' | 'engagementScore' | 'updatedAt'> {}
 
 class HealthScore extends Model<HealthScoreAttributes, HealthScoreCreationAttributes> implements HealthScoreAttributes {
   public id!: string;
@@ -25,6 +27,8 @@ class HealthScore extends Model<HealthScoreAttributes, HealthScoreCreationAttrib
   public score!: number;
   public npsScore!: number | null;
   public csatScore!: number | null;
+  public cesScore!: number | null;
+  public customSurveyScore!: number | null;
   public engagementScore!: number | null;
   public riskLevel!: RiskLevel;
   public calculatedAt!: Date;
@@ -73,6 +77,16 @@ HealthScore.init(
       type: DataTypes.DECIMAL(5, 2),
       allowNull: true,
       field: 'csat_score',
+    },
+    cesScore: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      field: 'ces_score',
+    },
+    customSurveyScore: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      field: 'custom_survey_score',
     },
     engagementScore: {
       type: DataTypes.DECIMAL(5, 2),

@@ -4,13 +4,15 @@ import {
   ArrowLeft,
   Building2,
   Globe,
-  Linkedin,
-  DollarSign,
+  Phone,
+  MapPin,
   Users,
   Briefcase,
   Edit,
   Trash2,
   Plus,
+  DollarSign,
+  Linkedin,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
@@ -28,6 +30,8 @@ import {
   getDealStageBadgeVariant,
 } from '../../components/ui';
 import CompanyModal from './CompanyModal';
+import ContactModal from '../contacts/ContactModal';
+import DealModal from '../deals/DealModal';
 import ActivityFeed from '../../components/activity/ActivityFeed';
 
 const CompanyDetail: React.FC = () => {
@@ -66,6 +70,23 @@ const CompanyDetail: React.FC = () => {
       currency: 'USD',
       minimumFractionDigits: 0,
     }).format(value);
+  };
+
+  const getContactDisplayName = (contact: any) => {
+    if (contact.firstName && contact.lastName) {
+      return `${contact.firstName} ${contact.lastName}`;
+    }
+    return contact.fullName || contact.email || 'Unknown';
+  };
+
+  const getFullAddress = () => {
+    const parts = [
+      currentCompany?.address,
+      currentCompany?.city,
+      currentCompany?.state,
+      currentCompany?.country,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : null;
   };
 
   if (isLoading || !currentCompany) {
@@ -130,16 +151,48 @@ const CompanyDetail: React.FC = () => {
                 <div>
                   <dt className="text-sm text-slate-500">Website</dt>
                   <dd className="mt-1">
-                    {currentCompany.domain ? (
+                    {currentCompany.website ? (
                       <a
-                        href={currentCompany.domain.startsWith('http') ? currentCompany.domain : `https://${currentCompany.domain}`}
+                        href={currentCompany.website.startsWith('http') ? currentCompany.website : `https://${currentCompany.website}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary-600 hover:underline flex items-center gap-1"
                       >
                         <Globe className="w-4 h-4" />
-                        {currentCompany.domain}
+                        {currentCompany.website}
                       </a>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-slate-500">Phone</dt>
+                  <dd className="mt-1">
+                    {currentCompany.phone ? (
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-4 h-4 text-slate-400" />
+                        {currentCompany.phone}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-slate-500">Company Size</dt>
+                  <dd className="mt-1 text-slate-900">
+                    {currentCompany.size || '-'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-slate-500">Revenue</dt>
+                  <dd className="mt-1">
+                    {currentCompany.revenue ? (
+                      <span className="flex items-center gap-1">
+                        <DollarSign className="w-4 h-4 text-slate-400" />
+                        {formatCurrency(currentCompany.revenue)}
+                      </span>
                     ) : (
                       <span className="text-slate-400">-</span>
                     )}
@@ -148,15 +201,15 @@ const CompanyDetail: React.FC = () => {
                 <div>
                   <dt className="text-sm text-slate-500">LinkedIn</dt>
                   <dd className="mt-1">
-                    {currentCompany.linkedinUrl ? (
+                    {currentCompany.linkedin ? (
                       <a
-                        href={currentCompany.linkedinUrl}
+                        href={currentCompany.linkedin.startsWith('http') ? currentCompany.linkedin : `https://${currentCompany.linkedin}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary-600 hover:underline flex items-center gap-1"
                       >
                         <Linkedin className="w-4 h-4" />
-                        View Profile
+                        LinkedIn Profile
                       </a>
                     ) : (
                       <span className="text-slate-400">-</span>
@@ -164,10 +217,22 @@ const CompanyDetail: React.FC = () => {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-slate-500">Annual Revenue</dt>
-                  <dd className="mt-1 flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-slate-400" />
-                    {formatCurrency(currentCompany.revenue)}
+                  <dt className="text-sm text-slate-500">Lifecycle Stage</dt>
+                  <dd className="mt-1 text-slate-900 capitalize">
+                    {currentCompany.lifecycleStage || '-'}
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-sm text-slate-500">Address</dt>
+                  <dd className="mt-1">
+                    {getFullAddress() ? (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4 text-slate-400" />
+                        {getFullAddress()}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
                   </dd>
                 </div>
                 <div>
@@ -208,9 +273,9 @@ const CompanyDetail: React.FC = () => {
                       className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors"
                     >
                       <div>
-                        <p className="font-medium text-slate-900">{contact.fullName}</p>
+                        <p className="font-medium text-slate-900">{getContactDisplayName(contact)}</p>
                         <p className="text-sm text-slate-500">
-                          {contact.jobTitle || contact.email || '-'}
+                          {contact.title || contact.email || '-'}
                         </p>
                       </div>
                       <Badge variant={getLifecycleBadgeVariant(contact.lifecycleStage)}>
@@ -268,7 +333,7 @@ const CompanyDetail: React.FC = () => {
         </div>
 
         {/* Sidebar - Activity Feed */}
-        <div>
+        <div className="space-y-6">
           <ActivityFeed entityType="company" entityId={currentCompany.id} />
         </div>
       </div>
@@ -279,6 +344,28 @@ const CompanyDetail: React.FC = () => {
         onClose={() => dispatch(openModal({ type: null, mode: null }))}
         mode={modal.mode}
         company={modal.data}
+      />
+
+      <ContactModal
+        isOpen={modal.type === 'contact'}
+        onClose={() => {
+          dispatch(openModal({ type: null, mode: null }));
+          // Refresh company data to show new contact
+          if (id) dispatch(fetchCompany(id));
+        }}
+        mode={modal.mode}
+        contact={modal.data}
+      />
+
+      <DealModal
+        isOpen={modal.type === 'deal'}
+        onClose={() => {
+          dispatch(openModal({ type: null, mode: null }));
+          // Refresh company data to show new deal
+          if (id) dispatch(fetchCompany(id));
+        }}
+        mode={modal.mode}
+        deal={modal.data}
       />
 
       <ConfirmModal

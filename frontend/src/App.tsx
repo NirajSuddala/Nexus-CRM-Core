@@ -21,9 +21,13 @@ import Reports from './pages/reports/Reports';
 
 // New Feature Pages
 import ProjectList from './pages/projects/ProjectList';
+import ProjectDetail from './pages/projects/ProjectDetail';
 import TicketList from './pages/tickets/TicketList';
+import TicketDetail from './pages/tickets/TicketDetail';
 import SurveyList from './pages/surveys/SurveyList';
+import SurveyDetail from './pages/surveys/SurveyDetail';
 import HealthScoreList from './pages/health-scores/HealthScoreList';
+import HealthScoreDetail from './pages/health-scores/HealthScoreDetail';
 import EmailSequenceList from './pages/email-sequences/EmailSequenceList';
 import AutomationList from './pages/automations/AutomationList';
 import PipelineList from './pages/pipelines/PipelineList';
@@ -55,15 +59,19 @@ const AppRoutes: React.FC = () => {
 
         {/* Projects */}
         <Route path="projects" element={<ProjectList />} />
+        <Route path="projects/:id" element={<ProjectDetail />} />
 
         {/* Tickets */}
         <Route path="tickets" element={<TicketList />} />
+        <Route path="tickets/:id" element={<TicketDetail />} />
 
         {/* Surveys */}
         <Route path="surveys" element={<SurveyList />} />
+        <Route path="surveys/:id" element={<SurveyDetail />} />
 
         {/* Health Scores */}
         <Route path="health-scores" element={<HealthScoreList />} />
+        <Route path="health-scores/:id" element={<HealthScoreDetail />} />
 
         {/* Email Sequences */}
         <Route path="email-sequences" element={<EmailSequenceList />} />

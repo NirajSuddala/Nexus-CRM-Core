@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { companiesApi } from '../services/api';
 import { Company, CompanyFormData, PaginationMeta } from '../types';
 
@@ -126,6 +126,10 @@ const companiesSlice = createSlice({
       .addCase(createCompany.fulfilled, (state, action) => {
         state.isLoading = false;
         state.companies.unshift(action.payload);
+        if (state.pagination) {
+          state.pagination.total += 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit);
+        }
       })
       .addCase(createCompany.rejected, (state, action) => {
         state.isLoading = false;
@@ -160,6 +164,10 @@ const companiesSlice = createSlice({
         state.companies = state.companies.filter((c) => c.id !== action.payload);
         if (state.currentCompany?.id === action.payload) {
           state.currentCompany = null;
+        }
+        if (state.pagination && state.pagination.total > 0) {
+          state.pagination.total -= 1;
+          state.pagination.pages = Math.ceil(state.pagination.total / state.pagination.limit) || 1;
         }
       })
       .addCase(deleteCompany.rejected, (state, action) => {

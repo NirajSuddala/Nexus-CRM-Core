@@ -36,16 +36,6 @@ const CompanyList: React.FC = () => {
     dispatch(fetchCompanies({ page: 1, limit: 20, search: search || undefined }));
   };
 
-  const formatCurrency = (value: number | null) => {
-    if (!value) return '-';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -83,7 +73,7 @@ const CompanyList: React.FC = () => {
             <TableRow>
               <TableHeader>Company</TableHeader>
               <TableHeader>Industry</TableHeader>
-              <TableHeader>Revenue</TableHeader>
+              <TableHeader>Size</TableHeader>
               <TableHeader>Contacts</TableHeader>
               <TableHeader>Deals</TableHeader>
             </TableRow>
@@ -115,15 +105,15 @@ const CompanyList: React.FC = () => {
                       </div>
                       <div>
                         <p className="font-medium text-slate-900">{company.name}</p>
-                        {company.domain && (
+                        {company.website && (
                           <a
-                            href={company.domain.startsWith('http') ? company.domain : `https://${company.domain}`}
+                            href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-primary-600 hover:underline flex items-center gap-1"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {company.domain}
+                            {company.website}
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
@@ -131,7 +121,7 @@ const CompanyList: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>{company.industry || '-'}</TableCell>
-                  <TableCell>{formatCurrency(company.revenue)}</TableCell>
+                  <TableCell>{company.size || '-'}</TableCell>
                   <TableCell>{company.contacts?.length || 0}</TableCell>
                   <TableCell>{company.deals?.length || 0}</TableCell>
                 </TableRow>

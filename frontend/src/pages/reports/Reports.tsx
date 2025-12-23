@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   TrendingUp,
@@ -1061,7 +1061,7 @@ const ContactGrowthReport: React.FC = () => {
 // Contacts by Company Report
 const ContactsByCompanyReport: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
