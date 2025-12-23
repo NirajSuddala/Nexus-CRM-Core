@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft, FolderKanban, Building2, User, Calendar, Edit, Trash2, Plus, CheckCircle, Circle, Clock
+  ArrowLeft, FolderKanban, Building2, User, Calendar, Edit, Trash2, Plus, CheckCircle, Circle, Clock,
+  GitBranch, ArrowRight, ChevronRight, Zap
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
-import { fetchProject, deleteProject, clearCurrentProject, fetchMilestones, updateMilestone, deleteMilestone } from '../../features/projectsSlice';
+import { fetchProject, deleteProject, clearCurrentProject, fetchMilestones, updateMilestone, deleteMilestone, updateProject } from '../../features/projectsSlice';
+import { fetchPipeline, fetchPipelineStages } from '../../features/pipelinesSlice';
 import { openModal, addNotification } from '../../features/uiSlice';
 import {
   Button, Card, CardHeader, CardTitle, CardContent, Badge, ConfirmModal
@@ -13,6 +15,7 @@ import {
 import ProjectModal from './ProjectModal';
 import MilestoneModal from './MilestoneModal';
 import ActivityFeed from '../../components/activity/ActivityFeed';
+import PipelineWorkflowAutomation from '../../components/projects/PipelineWorkflowAutomation';
 
 const getStatusBadgeVariant = (status: string): 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' => {
   switch (status) {
@@ -38,6 +41,7 @@ const ProjectDetail: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { currentProject, milestones, isLoading } = useAppSelector((state) => state.projects);
+  const { currentPipeline, stages } = useAppSelector((state) => state.pipelines);
   const { modal } = useAppSelector((state) => state.ui);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
@@ -55,6 +59,14 @@ const ProjectDetail: React.FC = () => {
       dispatch(clearCurrentProject());
     };
   }, [dispatch, id]);
+
+  // Fetch pipeline data when project has a pipeline
+  useEffect(() => {
+    if (currentProject?.pipelineId) {
+      dispatch(fetchPipeline(currentProject.pipelineId));
+      dispatch(fetchPipelineStages(currentProject.pipelineId));
+    }
+  }, [dispatch, currentProject?.pipelineId]);
 
   const handleDelete = async () => {
     if (!id) return;
@@ -129,6 +141,32 @@ const ProjectDetail: React.FC = () => {
 
   const dynamicProgress = calculateProgress();
 
+  // Calculate pipeline stage progress
+  const sortedStages = [...stages].sort((a, b) => a.sortOrder - b.sortOrder);
+  const currentStageIndex = sortedStages.findIndex(s => s.id === currentProject?.stageId);
+  const pipelineProgress = sortedStages.length > 0 && currentStageIndex >= 0
+    ? Math.round(((currentStageIndex + 1) / sortedStages.length) * 100)
+    : 0;
+
+  // Move to next/previous stage
+  const handleMoveStage = async (direction: 'next' | 'prev') => {
+    if (!id || !currentProject?.stageId) return;
+    const newIndex = direction === 'next' ? currentStageIndex + 1 : currentStageIndex - 1;
+    if (newIndex < 0 || newIndex >= sortedStages.length) return;
+
+    const newStage = sortedStages[newIndex];
+    try {
+      await dispatch(updateProject({
+        id,
+        data: { stageId: newStage.id }
+      })).unwrap();
+      dispatch(addNotification({ type: 'success', title: `Moved to ${newStage.name}` }));
+      dispatch(fetchProject(id));
+    } catch (error) {
+      dispatch(addNotification({ type: 'error', title: 'Failed to update stage' }));
+    }
+  };
+
   if (isLoading || !currentProject) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -176,6 +214,174 @@ const ProjectDetail: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Pipeline Stage Tracker */}
+          {currentProject.pipelineId && sortedStages.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GitBranch className="w-5 h-5" />
+                  Pipeline Progress
+                  {currentPipeline && (
+                    <Badge variant="info" className="ml-2">{currentPipeline.name}</Badge>
+                  )}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleMoveStage('prev')}
+                    disabled={currentStageIndex <= 0}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleMoveStage('next')}
+                    disabled={currentStageIndex >= sortedStages.length - 1}
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Stage Progress Bar */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-slate-500">Stage Progress</span>
+                    <span className="font-medium text-slate-700">{pipelineProgress}%</span>
+                  </div>
+                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                      style={{ width: `${pipelineProgress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Stage Steps */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-2">
+                  {sortedStages.map((stage, index) => {
+                    const isCompleted = index < currentStageIndex;
+                    const isCurrent = index === currentStageIndex;
+
+                    return (
+                      <React.Fragment key={stage.id}>
+                        <div
+                          className={`flex-shrink-0 flex flex-col items-center cursor-pointer transition-all ${
+                            isCurrent ? 'scale-105' : ''
+                          }`}
+                          onClick={() => {
+                            if (index !== currentStageIndex) {
+                              const direction = index > currentStageIndex ? 'next' : 'prev';
+                              // Move multiple steps if needed
+                              handleMoveStage(direction);
+                            }
+                          }}
+                        >
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                              isCompleted
+                                ? 'bg-green-500 text-white'
+                                : isCurrent
+                                ? 'bg-primary-500 text-white ring-4 ring-primary-100'
+                                : 'bg-slate-200 text-slate-500'
+                            }`}
+                            style={stage.color && isCurrent ? { backgroundColor: stage.color } : {}}
+                          >
+                            {isCompleted ? (
+                              <CheckCircle className="w-5 h-5" />
+                            ) : (
+                              index + 1
+                            )}
+                          </div>
+                          <span
+                            className={`mt-1 text-xs font-medium text-center max-w-[80px] truncate ${
+                              isCurrent ? 'text-primary-600' : isCompleted ? 'text-green-600' : 'text-slate-500'
+                            }`}
+                          >
+                            {stage.name}
+                          </span>
+                        </div>
+                        {index < sortedStages.length - 1 && (
+                          <ChevronRight
+                            className={`w-4 h-4 flex-shrink-0 ${
+                              isCompleted ? 'text-green-400' : 'text-slate-300'
+                            }`}
+                          />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+
+                {/* Current Stage Info */}
+                {currentStageIndex >= 0 && (
+                  <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-primary-100">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-primary-600" />
+                      <span className="font-medium text-primary-900">
+                        Current Stage: {sortedStages[currentStageIndex]?.name}
+                      </span>
+                    </div>
+                    <p className="text-sm text-primary-700 mt-1">
+                      Stage {currentStageIndex + 1} of {sortedStages.length}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dual Progress Summary */}
+          {currentProject.pipelineId && sortedStages.length > 0 && milestones.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Progress Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <GitBranch className="w-4 h-4 text-primary-500" />
+                      <span className="text-sm font-medium text-slate-700">Pipeline Stage</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary-500 rounded-full transition-all duration-300"
+                          style={{ width: `${pipelineProgress}%` }}
+                        />
+                      </div>
+                      <span className="text-lg font-bold text-primary-600">{pipelineProgress}%</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {currentStageIndex + 1} of {sortedStages.length} stages completed
+                    </p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-sm font-medium text-slate-700">Milestones</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-green-500 rounded-full transition-all duration-300"
+                          style={{ width: `${dynamicProgress}%` }}
+                        />
+                      </div>
+                      <span className="text-lg font-bold text-green-600">{dynamicProgress}%</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {milestones.filter(m => m.status === 'completed').length} of {milestones.length} milestones completed
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Project Info */}
           <Card>
             <CardHeader><CardTitle>Project Information</CardTitle></CardHeader>
@@ -297,8 +503,23 @@ const ProjectDetail: React.FC = () => {
           </Card>
         </div>
 
-        {/* Sidebar - Activity Feed */}
+        {/* Sidebar - Activity Feed & Workflow */}
         <div className="space-y-6">
+          {/* Pipeline Workflow Automation */}
+          {currentProject.pipelineId && sortedStages.length > 0 && milestones.length > 0 && (
+            <PipelineWorkflowAutomation
+              projectId={currentProject.id}
+              milestones={milestones}
+              stages={sortedStages}
+              currentStageIndex={currentStageIndex}
+              onRefresh={() => {
+                if (id) {
+                  dispatch(fetchMilestones(id));
+                  dispatch(fetchProject(id));
+                }
+              }}
+            />
+          )}
           <ActivityFeed entityType="project" entityId={currentProject.id} />
         </div>
       </div>

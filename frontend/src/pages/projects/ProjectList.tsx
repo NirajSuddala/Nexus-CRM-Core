@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, FolderKanban, Calendar } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, LayoutGrid } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchProjects } from '../../features/projectsSlice';
@@ -57,9 +57,14 @@ const ProjectList: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Projects</h1>
           <p className="text-slate-500">Manage client delivery projects</p>
         </div>
-        <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => dispatch(openModal({ type: 'project', mode: 'create' }))}>
-          New Project
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" leftIcon={<LayoutGrid className="w-4 h-4" />} onClick={() => navigate('/projects')}>
+            Board View
+          </Button>
+          <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => dispatch(openModal({ type: 'project', mode: 'create' }))}>
+            New Project
+          </Button>
+        </div>
       </div>
 
       <Card padding="none">

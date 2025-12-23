@@ -18,15 +18,20 @@ interface Project {
   description?: string;
   companyId: string;
   contactId?: string;
+  type?: 'onboarding' | 'delivery' | 'implementation' | 'support';
   status: 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
   startDate?: string;
   targetEndDate?: string;
   actualEndDate?: string;
   progress: number;
   createdBy: string;
+  pipelineId?: string;
+  stageId?: string;
   milestones?: Milestone[];
   company?: any;
   contact?: any;
+  stage?: any;
+  pipeline?: any;
   createdAt: string;
   updatedAt: string;
 }

@@ -22,6 +22,7 @@ import Reports from './pages/reports/Reports';
 // New Feature Pages
 import ProjectList from './pages/projects/ProjectList';
 import ProjectDetail from './pages/projects/ProjectDetail';
+import ProjectKanban from './pages/projects/ProjectKanban';
 import TicketList from './pages/tickets/TicketList';
 import TicketDetail from './pages/tickets/TicketDetail';
 import SurveyList from './pages/surveys/SurveyList';
@@ -60,7 +61,8 @@ const AppRoutes: React.FC = () => {
         <Route path="tasks/:id" element={<TaskDetail />} />
 
         {/* Projects */}
-        <Route path="projects" element={<ProjectList />} />
+        <Route path="projects" element={<ProjectKanban />} />
+        <Route path="projects/list" element={<ProjectList />} />
         <Route path="projects/:id" element={<ProjectDetail />} />
 
         {/* Tickets */}
