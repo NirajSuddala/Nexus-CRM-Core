@@ -18,9 +18,7 @@ import DealDetail from './pages/deals/DealDetail';
 import TaskList from './pages/tasks/TaskList';
 import TaskDetail from './pages/tasks/TaskDetail';
 import Reports from './pages/reports/Reports';
-
-// Demo mode - no authentication required
-const DEMO_MODE = true;
+import Settings from './pages/settings/Settings';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -48,6 +46,9 @@ const AppRoutes: React.FC = () => {
 
         {/* Reports */}
         <Route path="reports/*" element={<Reports />} />
+
+        {/* Settings */}
+        <Route path="settings" element={<Settings />} />
       </Route>
 
       {/* Fallback */}

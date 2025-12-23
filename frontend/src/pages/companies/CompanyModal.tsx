@@ -10,9 +10,9 @@ import { Company, CompanyFormData } from '../../types';
 
 const companySchema = z.object({
   name: z.string().min(1, 'Company name is required'),
-  domain: z.string().url('Invalid URL').optional().or(z.literal('')),
-  industry: z.string().optional(),
-  linkedinUrl: z.string().url('Invalid URL').optional().or(z.literal('')),
+  domain: z.string().min(1, 'Domain is required'),
+  industry: z.string().min(1, 'Industry is required'),
+  linkedinUrl: z.string().url('Invalid LinkedIn URL').optional().or(z.literal('')),
   revenue: z.string().optional().transform((val) => (val ? parseFloat(val) : null)),
 });
 
@@ -87,15 +87,16 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, mode, comp
         />
 
         <Input
-          label="Website"
+          label="Website *"
           {...register('domain')}
           error={errors.domain?.message}
           placeholder="https://example.com"
         />
 
         <Input
-          label="Industry"
+          label="Industry *"
           {...register('industry')}
+          error={errors.industry?.message}
           placeholder="Technology, Healthcare, etc."
         />
 
