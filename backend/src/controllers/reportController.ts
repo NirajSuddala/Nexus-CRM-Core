@@ -274,10 +274,20 @@ export const getSalesForecast = async (
         d => !['Closed Won', 'Closed Lost'].includes(d.stageName)
       );
 
-      const forecast = pipelineDeals.map(deal => ({
-        ...deal,
-        weightedValue: (deal.amount || 0) * (deal.probability / 100),
-      }));
+      // Transform deals to match frontend expected format
+      const forecast = pipelineDeals.map(deal => {
+        const contact = deal.contactId ? demoContacts.find(c => c.id === deal.contactId) : null;
+        const company = deal.companyId ? demoCompanies.find(c => c.id === deal.companyId) : null;
+
+        return {
+          ...deal,
+          stage: deal.stageName?.toLowerCase().replace(' ', '_') || 'discovery',
+          closeDate: deal.expectedCloseDate,
+          company: company || deal.company,
+          contact: contact ? { ...contact, fullName: contact.fullName || `${contact.firstName} ${contact.lastName}` } : deal.contact,
+          weightedValue: (deal.amount || 0) * (deal.probability / 100),
+        };
+      });
 
       const totalWeightedValue = forecast.reduce((sum, deal) => sum + deal.weightedValue, 0);
       const totalPipelineValue = pipelineDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0);
@@ -597,11 +607,23 @@ export const getActivityLog = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
-    const { range = 'last7days', startDate, endDate, activityType, contactId, companyId, dealId } = req.query as any;
+    const { range = 'last7days', startDate, endDate, entityType, activityType, contactId, companyId, dealId } = req.query as any;
     const { start, end } = getDateRange(range, startDate, endDate);
 
     if (!isDatabaseConnected) {
       let filtered = [...demoActivities];
+
+      // Filter by entityType (frontend sends this)
+      if (entityType) {
+        filtered = filtered.filter(a => {
+          if (entityType === 'contact') return a.contactId != null;
+          if (entityType === 'company') return a.companyId != null;
+          if (entityType === 'deal') return a.dealId != null;
+          if (entityType === 'task') return a.taskId != null;
+          return true;
+        });
+      }
+      // Also support activityType for backwards compatibility
       if (activityType) {
         filtered = filtered.filter(a => a.type === activityType);
       }
@@ -615,8 +637,42 @@ export const getActivityLog = async (
         filtered = filtered.filter(a => a.dealId === dealId);
       }
 
+      // Transform activities to match frontend expected format
+      const transformedActivities = filtered.map(activity => {
+        // Determine entityType from which ID field is set
+        let derivedEntityType = 'contact';
+        let entityId = activity.contactId;
+        if (activity.dealId) {
+          derivedEntityType = 'deal';
+          entityId = activity.dealId;
+        } else if (activity.companyId) {
+          derivedEntityType = 'company';
+          entityId = activity.companyId;
+        } else if (activity.taskId) {
+          derivedEntityType = 'task';
+          entityId = activity.taskId;
+        }
+
+        // Map activity type to action
+        const actionMap: Record<string, string> = {
+          'note': 'note_added',
+          'task': 'task_completed',
+          'email': 'email_sent',
+          'call': 'call_logged',
+          'meeting': 'meeting_scheduled',
+        };
+
+        return {
+          ...activity,
+          entityType: derivedEntityType,
+          entityId: entityId,
+          action: actionMap[activity.type] || activity.type,
+          createdAt: activity.createdAt || activity.timestamp,
+        };
+      });
+
       res.json({
-        data: filtered,
+        data: transformedActivities,
         pagination: {
           page,
           limit,

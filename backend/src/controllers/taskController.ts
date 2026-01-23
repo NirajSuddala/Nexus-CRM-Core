@@ -27,8 +27,15 @@ export const getTasks = async (
       if (contactId) filtered = filtered.filter(t => t.contactId === contactId);
       if (dealId) filtered = filtered.filter(t => t.dealId === dealId);
 
+      // Add name property and fullName to contacts for frontend compatibility
+      const tasksWithName = filtered.map(t => ({
+        ...t,
+        name: t.name || t.title,
+        contact: t.contact ? { ...t.contact, fullName: t.contact.fullName || `${t.contact.firstName} ${t.contact.lastName}` } : null,
+      }));
+
       res.json({
-        tasks: filtered,
+        tasks: tasksWithName,
         pagination: {
           page,
           limit,
@@ -97,7 +104,11 @@ export const getUpcomingTasks = async (
         if (t.status === 'completed' || !t.dueDate) return false;
         const dueDate = new Date(t.dueDate);
         return dueDate >= today && dueDate <= endDate;
-      });
+      }).map(t => ({
+        ...t,
+        name: t.name || t.title,
+        contact: t.contact ? { ...t.contact, fullName: t.contact.fullName || `${t.contact.firstName} ${t.contact.lastName}` } : null,
+      }));
       res.json(upcoming);
       return;
     }
@@ -143,7 +154,11 @@ export const getOverdueTasks = async (
       const overdue = demoTasks.filter(t => {
         if (t.status === 'completed' || !t.dueDate) return false;
         return new Date(t.dueDate) < today;
-      });
+      }).map(t => ({
+        ...t,
+        name: t.name || t.title,
+        contact: t.contact ? { ...t.contact, fullName: t.contact.fullName || `${t.contact.firstName} ${t.contact.lastName}` } : null,
+      }));
       res.json(overdue);
       return;
     }
@@ -186,7 +201,19 @@ export const getTask = async (
       if (!task) {
         throw new AppError('Task not found', 404);
       }
-      res.json(task);
+
+      // Get related contact and deal with proper structure
+      const contact = task.contactId ? demoContacts.find(c => c.id === task.contactId) : null;
+      const deal = task.dealId ? demoDeals.find(d => d.id === task.dealId) : null;
+
+      const taskWithRelations = {
+        ...task,
+        name: task.name || task.title,
+        contact: contact ? { ...contact, fullName: contact.fullName || `${contact.firstName} ${contact.lastName}` } : null,
+        deal: deal || null,
+      };
+
+      res.json(taskWithRelations);
       return;
     }
 

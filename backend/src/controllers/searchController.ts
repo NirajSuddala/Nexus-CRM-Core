@@ -10,7 +10,7 @@ export const globalSearch = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const query = (req.query.q as string || '').toLowerCase();
+    const query = req.query.q as string;
     const type = (req.query.type as string) || 'all';
     const limit = parseInt(req.query.limit as string) || 10;
 
@@ -58,56 +58,6 @@ export const globalSearch = async (
       return;
     }
 
-    // Demo mode search
-    if (!isDatabaseConnected) {
-      const results: Record<string, any[]> = {};
-
-      // Search Companies
-      if (type === 'all' || type === 'companies') {
-        results.companies = demoCompanies
-          .filter((c) =>
-            c.name.toLowerCase().includes(query) ||
-            c.domain?.toLowerCase().includes(query) ||
-            c.industry?.toLowerCase().includes(query)
-          )
-          .slice(0, limit);
-      }
-
-      // Search Contacts
-      if (type === 'all' || type === 'contacts') {
-        results.contacts = demoContacts
-          .filter((c) =>
-            c.fullName.toLowerCase().includes(query) ||
-            c.email?.toLowerCase().includes(query) ||
-            c.jobTitle?.toLowerCase().includes(query)
-          )
-          .slice(0, limit);
-      }
-
-      // Search Deals
-      if (type === 'all' || type === 'deals') {
-        results.deals = demoDeals
-          .filter((d) => d.name.toLowerCase().includes(query))
-          .slice(0, limit);
-      }
-
-      // Search Tasks
-      if (type === 'all' || type === 'tasks') {
-        results.tasks = demoTasks
-          .filter((t) =>
-            t.name.toLowerCase().includes(query) ||
-            t.description?.toLowerCase().includes(query)
-          )
-          .slice(0, limit);
-      }
-
-      res.json(results);
-      return;
-    }
-
-    // Database mode search
-    const { Company, Contact, Deal, Task } = await import('../models');
-    const { Op } = await import('sequelize');
     const searchPattern = { [Op.iLike]: `%${query}%` };
     const results: Record<string, any[]> = {};
 

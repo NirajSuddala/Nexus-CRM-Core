@@ -92,10 +92,27 @@ export const getCompany = async (
         throw new AppError('Company not found', 404);
       }
 
+      // Add fullName to contacts for frontend compatibility
+      const contactsWithFullName = demoContacts
+        .filter(c => c.companyId === company.id)
+        .map(c => ({
+          ...c,
+          fullName: c.fullName || `${c.firstName} ${c.lastName}`,
+          jobTitle: c.jobTitle || c.title,
+        }));
+
+      // Add stage property to deals for frontend compatibility
+      const dealsWithStage = demoDeals
+        .filter(d => d.companyId === company.id)
+        .map(d => ({
+          ...d,
+          stage: d.stageName?.toLowerCase().replace(' ', '_') || 'discovery',
+        }));
+
       const companyWithRelations = {
         ...company,
-        contacts: demoContacts.filter(c => c.companyId === company.id),
-        deals: demoDeals.filter(d => d.companyId === company.id),
+        contacts: contactsWithFullName,
+        deals: dealsWithStage,
       };
 
       const activities = demoActivities.filter(a => a.companyId === company.id);

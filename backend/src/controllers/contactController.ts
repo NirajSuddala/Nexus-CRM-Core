@@ -30,6 +30,8 @@ export const getContacts = async (
 
       const contactsWithCompany = filtered.map(contact => ({
         ...contact,
+        fullName: contact.fullName || `${contact.firstName} ${contact.lastName}`,
+        jobTitle: contact.jobTitle || contact.title,
         company: contact.companyId ? demoCompanies.find(c => c.id === contact.companyId) : null,
       }));
 
@@ -97,11 +99,19 @@ export const getContact = async (
         throw new AppError('Contact not found', 404);
       }
 
+      // Add tasks with name property for frontend compatibility
+      const tasksWithName = demoTasks.filter(t => t.contactId === contact.id).map(t => ({
+        ...t,
+        name: t.name || t.title,
+      }));
+
       const contactWithRelations = {
         ...contact,
+        fullName: contact.fullName || `${contact.firstName} ${contact.lastName}`,
+        jobTitle: contact.jobTitle || contact.title,
         company: contact.companyId ? demoCompanies.find(c => c.id === contact.companyId) : null,
         deals: demoDeals.filter(d => d.contactId === contact.id),
-        tasks: demoTasks.filter(t => t.contactId === contact.id),
+        tasks: tasksWithName,
       };
 
       const activities = demoActivities.filter(a => a.contactId === contact.id);

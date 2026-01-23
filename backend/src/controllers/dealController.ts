@@ -25,8 +25,15 @@ export const getDeals = async (
       if (companyId) filtered = filtered.filter(d => d.companyId === companyId);
       if (contactId) filtered = filtered.filter(d => d.contactId === contactId);
 
+      // Add stage property and fullName to contacts for frontend compatibility
+      const dealsWithStage = filtered.map(d => ({
+        ...d,
+        stage: d.stageName?.toLowerCase().replace(' ', '_') || 'discovery',
+        contact: d.contact ? { ...d.contact, fullName: d.contact.fullName || `${d.contact.firstName} ${d.contact.lastName}` } : null,
+      }));
+
       res.json({
-        deals: filtered,
+        deals: dealsWithStage,
         pagination: {
           page,
           limit,
@@ -82,7 +89,16 @@ export const getDealsByStage = async (
 ): Promise<void> => {
   try {
     if (!isDatabaseConnected) {
-      res.json(demoDealsByStage);
+      // Transform deals to include stage property and fullName for contacts
+      const transformedStages: Record<string, any[]> = {};
+      for (const [stageName, deals] of Object.entries(demoDealsByStage)) {
+        transformedStages[stageName] = (deals as any[]).map(d => ({
+          ...d,
+          stage: stageName,
+          contact: d.contact ? { ...d.contact, fullName: d.contact.fullName || `${d.contact.firstName} ${d.contact.lastName}` } : null,
+        }));
+      }
+      res.json(transformedStages);
       return;
     }
 
@@ -123,8 +139,15 @@ export const getDeal = async (
         throw new AppError('Deal not found', 404);
       }
 
+      // Get related company and contact with fullName
+      const company = deal.companyId ? demoCompanies.find(c => c.id === deal.companyId) : null;
+      const contact = deal.contactId ? demoContacts.find(c => c.id === deal.contactId) : null;
+
       const dealWithRelations = {
         ...deal,
+        stage: deal.stageName?.toLowerCase().replace(' ', '_') || 'discovery',
+        company: company || deal.company,
+        contact: contact ? { ...contact, fullName: contact.fullName || `${contact.firstName} ${contact.lastName}` } : deal.contact,
         tasks: demoTasks.filter(t => t.dealId === deal.id),
       };
 
