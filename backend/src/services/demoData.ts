@@ -1549,17 +1549,34 @@ export const demoSurveys = [
   {
     id: 'demo-survey-1',
     name: 'Customer NPS Survey',
-    type: 'NPS',
+    description: 'Monthly Net Promoter Score survey to measure customer loyalty and satisfaction',
+    type: 'nps',
     status: 'active',
+    triggerEvent: 'project_completed',
+    sendAfterDays: 7,
     questions: [
       {
         id: 'q1',
-        type: 'nps',
+        type: 'rating',
         text: 'How likely are you to recommend us to a friend or colleague?',
+        scale: 10,
         required: true,
       },
       {
         id: 'q2',
+        type: 'multiple_choice',
+        text: 'What aspect of our service do you value most?',
+        options: ['Product Quality', 'Customer Support', 'Pricing', 'Ease of Use', 'Reliability'],
+        required: true,
+      },
+      {
+        id: 'q3',
+        type: 'yes_no',
+        text: 'Would you use our services again?',
+        required: true,
+      },
+      {
+        id: 'q4',
         type: 'text',
         text: 'What could we do to improve your experience?',
         required: false,
@@ -1572,8 +1589,11 @@ export const demoSurveys = [
   {
     id: 'demo-survey-2',
     name: 'Onboarding Satisfaction',
-    type: 'CSAT',
+    description: 'Survey to evaluate the customer onboarding experience and identify improvement areas',
+    type: 'csat',
     status: 'active',
+    triggerEvent: 'milestone_completed',
+    sendAfterDays: 1,
     questions: [
       {
         id: 'q1',
@@ -1591,6 +1611,19 @@ export const demoSurveys = [
       },
       {
         id: 'q3',
+        type: 'yes_no',
+        text: 'Did the onboarding meet your expectations?',
+        required: true,
+      },
+      {
+        id: 'q4',
+        type: 'multiple_choice',
+        text: 'Which onboarding resource was most helpful?',
+        options: ['Documentation', 'Video Tutorials', 'Live Training Sessions', 'Support Team'],
+        required: true,
+      },
+      {
+        id: 'q5',
         type: 'text',
         text: 'Any suggestions for improving our onboarding?',
         required: false,
@@ -1602,15 +1635,92 @@ export const demoSurveys = [
   },
   {
     id: 'demo-survey-3',
-    name: 'Support Effort Survey',
-    type: 'CES',
+    name: 'Support Experience Survey',
+    description: 'Customer Effort Score survey to measure support ticket resolution experience',
+    type: 'ces',
     status: 'active',
+    triggerEvent: 'ticket_resolved',
+    sendAfterDays: 0,
     questions: [
       {
         id: 'q1',
-        type: 'ces',
+        type: 'rating',
         text: 'How easy was it to get your issue resolved?',
+        scale: 7,
         required: true,
+      },
+      {
+        id: 'q2',
+        type: 'yes_no',
+        text: 'Was your issue fully resolved?',
+        required: true,
+      },
+      {
+        id: 'q3',
+        type: 'rating',
+        text: 'How would you rate the support agent\'s helpfulness?',
+        scale: 5,
+        required: true,
+      },
+      {
+        id: 'q4',
+        type: 'multiple_choice',
+        text: 'How did you contact support?',
+        options: ['Email', 'Phone', 'Live Chat', 'Support Ticket'],
+        required: true,
+      },
+      {
+        id: 'q5',
+        type: 'text',
+        text: 'Any additional feedback about your support experience?',
+        required: false,
+      },
+    ],
+    createdBy: 'demo-user-id',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'demo-survey-4',
+    name: 'Product Feedback Survey',
+    description: 'Custom survey to gather detailed product feedback and feature requests',
+    type: 'custom',
+    status: 'active',
+    triggerEvent: '',
+    sendAfterDays: 0,
+    questions: [
+      {
+        id: 'q1',
+        type: 'rating',
+        text: 'Overall, how satisfied are you with our product?',
+        scale: 10,
+        required: true,
+      },
+      {
+        id: 'q2',
+        type: 'multiple_choice',
+        text: 'Which feature do you use most frequently?',
+        options: ['Dashboard Analytics', 'Deal Management', 'Project Tracking', 'Contact Management', 'Reporting'],
+        required: true,
+      },
+      {
+        id: 'q3',
+        type: 'yes_no',
+        text: 'Have you encountered any bugs or issues recently?',
+        required: true,
+      },
+      {
+        id: 'q4',
+        type: 'multiple_choice',
+        text: 'What new feature would you like to see?',
+        options: ['Mobile App', 'AI Insights', 'Advanced Reporting', 'More Integrations', 'Workflow Automation'],
+        required: false,
+      },
+      {
+        id: 'q5',
+        type: 'text',
+        text: 'Please share any detailed feedback or feature requests',
+        required: false,
       },
     ],
     createdBy: 'demo-user-id',
@@ -1620,6 +1730,7 @@ export const demoSurveys = [
 ];
 
 export const demoSurveyResponses = [
+  // NPS Survey Responses
   {
     id: 'demo-response-1',
     surveyId: 'demo-survey-1',
@@ -1627,7 +1738,9 @@ export const demoSurveyResponses = [
     companyId: 'demo-company-1',
     responses: {
       q1: 9,
-      q2: 'Great service, very responsive team!',
+      q2: 'Customer Support',
+      q3: true,
+      q4: 'Great service, very responsive team! The product has exceeded our expectations.',
     },
     score: 9,
     submittedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1641,7 +1754,9 @@ export const demoSurveyResponses = [
     companyId: 'demo-company-2',
     responses: {
       q1: 7,
-      q2: 'Would appreciate faster response times.',
+      q2: 'Product Quality',
+      q3: true,
+      q4: 'Would appreciate faster response times on support tickets.',
     },
     score: 7,
     submittedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1650,34 +1765,152 @@ export const demoSurveyResponses = [
   },
   {
     id: 'demo-response-3',
+    surveyId: 'demo-survey-1',
+    contactId: 'demo-contact-3',
+    companyId: 'demo-company-3',
+    responses: {
+      q1: 10,
+      q2: 'Ease of Use',
+      q3: true,
+      q4: 'Absolutely love the product! Best CRM we have used.',
+    },
+    score: 10,
+    submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    contact: demoContacts[2],
+    company: demoCompanies[2],
+  },
+  // Onboarding Survey Responses
+  {
+    id: 'demo-response-4',
     surveyId: 'demo-survey-2',
     contactId: 'demo-contact-5',
     companyId: 'demo-company-1',
     responses: {
       q1: 5,
       q2: 4,
-      q3: 'The training materials were very helpful.',
+      q3: true,
+      q4: 'Live Training Sessions',
+      q5: 'The training materials were very helpful. Would love more video content.',
     },
-    score: 4.5,
+    score: 9,
     submittedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     contact: demoContacts[4],
     company: demoCompanies[0],
+  },
+  {
+    id: 'demo-response-5',
+    surveyId: 'demo-survey-2',
+    contactId: 'demo-contact-2',
+    companyId: 'demo-company-2',
+    responses: {
+      q1: 4,
+      q2: 5,
+      q3: true,
+      q4: 'Documentation',
+      q5: 'Documentation was comprehensive and easy to follow.',
+    },
+    score: 9,
+    submittedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    contact: demoContacts[1],
+    company: demoCompanies[1],
+  },
+  // Support Survey Responses
+  {
+    id: 'demo-response-6',
+    surveyId: 'demo-survey-3',
+    contactId: 'demo-contact-1',
+    companyId: 'demo-company-1',
+    responses: {
+      q1: 6,
+      q2: true,
+      q3: 5,
+      q4: 'Live Chat',
+      q5: 'Quick resolution through live chat. Very impressed!',
+    },
+    score: 8.5,
+    submittedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    contact: demoContacts[0],
+    company: demoCompanies[0],
+  },
+  {
+    id: 'demo-response-7',
+    surveyId: 'demo-survey-3',
+    contactId: 'demo-contact-3',
+    companyId: 'demo-company-3',
+    responses: {
+      q1: 5,
+      q2: true,
+      q3: 4,
+      q4: 'Email',
+      q5: 'Issue was resolved within 24 hours. Good turnaround time.',
+    },
+    score: 7,
+    submittedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    contact: demoContacts[2],
+    company: demoCompanies[2],
+  },
+  // Product Feedback Survey Responses
+  {
+    id: 'demo-response-8',
+    surveyId: 'demo-survey-4',
+    contactId: 'demo-contact-1',
+    companyId: 'demo-company-1',
+    responses: {
+      q1: 9,
+      q2: 'Dashboard Analytics',
+      q3: false,
+      q4: 'AI Insights',
+      q5: 'Would love to see more predictive analytics and AI-powered recommendations.',
+    },
+    score: 9,
+    submittedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    contact: demoContacts[0],
+    company: demoCompanies[0],
+  },
+  {
+    id: 'demo-response-9',
+    surveyId: 'demo-survey-4',
+    contactId: 'demo-contact-4',
+    companyId: 'demo-company-2',
+    responses: {
+      q1: 8,
+      q2: 'Deal Management',
+      q3: true,
+      q4: 'Mobile App',
+      q5: 'A mobile app would be game-changing for our sales team in the field.',
+    },
+    score: 8,
+    submittedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    contact: demoContacts[3],
+    company: demoCompanies[1],
   },
 ];
 
 // =====================
 // Phase 4: Health Scores
+// Health scores are calculated from survey responses
+// NPS: from demo-survey-1 responses
+// CSAT: from demo-survey-2 responses
+// CES: from demo-survey-3 responses
 // =====================
 export const demoHealthScores = [
   {
     id: 'demo-health-1',
     companyId: 'demo-company-1',
     contactId: null,
-    score: 85,
-    npsScore: 9,
-    csatScore: 4.5,
-    engagementScore: 90,
+    score: 88,
+    npsScore: 9, // From response-1 (q1: 9)
+    csatScore: 4.5, // From response-4 (avg of q1:5, q2:4)
+    cesScore: 8.5, // From response-6 (normalized)
+    engagementScore: 92,
     riskLevel: 'excellent',
+    factors: {
+      surveyParticipation: 'high',
+      recentActivity: 'very_active',
+      supportTicketTrend: 'improving',
+      productUsage: 'power_user',
+    },
+    lastSurveyResponse: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     calculatedAt: new Date().toISOString(),
     company: demoCompanies[0],
   },
@@ -1685,11 +1918,19 @@ export const demoHealthScores = [
     id: 'demo-health-2',
     companyId: 'demo-company-2',
     contactId: null,
-    score: 65,
-    npsScore: 7,
-    csatScore: null,
-    engagementScore: 60,
-    riskLevel: 'caution',
+    score: 72,
+    npsScore: 7, // From response-2 (q1: 7)
+    csatScore: 4.5, // From response-5 (avg of q1:4, q2:5)
+    cesScore: null,
+    engagementScore: 68,
+    riskLevel: 'good',
+    factors: {
+      surveyParticipation: 'medium',
+      recentActivity: 'active',
+      supportTicketTrend: 'stable',
+      productUsage: 'regular',
+    },
+    lastSurveyResponse: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
     calculatedAt: new Date().toISOString(),
     company: demoCompanies[1],
   },
@@ -1697,11 +1938,19 @@ export const demoHealthScores = [
     id: 'demo-health-3',
     companyId: 'demo-company-3',
     contactId: null,
-    score: 45,
-    npsScore: null,
+    score: 78,
+    npsScore: 10, // From response-3 (q1: 10)
     csatScore: null,
-    engagementScore: 40,
-    riskLevel: 'at_risk',
+    cesScore: 7, // From response-7 (normalized)
+    engagementScore: 72,
+    riskLevel: 'good',
+    factors: {
+      surveyParticipation: 'medium',
+      recentActivity: 'active',
+      supportTicketTrend: 'stable',
+      productUsage: 'regular',
+    },
+    lastSurveyResponse: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     calculatedAt: new Date().toISOString(),
     company: demoCompanies[2],
   },

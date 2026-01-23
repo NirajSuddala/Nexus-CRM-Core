@@ -119,19 +119,20 @@ const HealthScoreList: React.FC = () => {
             <TableRow>
               <TableHeader>Company</TableHeader>
               <TableHeader>Health Score</TableHeader>
-              <TableHeader>NPS Score</TableHeader>
-              <TableHeader>CSAT Score</TableHeader>
+              <TableHeader>NPS</TableHeader>
+              <TableHeader>CSAT</TableHeader>
+              <TableHeader>CES</TableHeader>
               <TableHeader>Engagement</TableHeader>
               <TableHeader>Risk Level</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow>
             ) : filteredScores.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">No health scores found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">No health scores found</TableCell></TableRow>
             ) : (
-              filteredScores.map((hs) => (
+              filteredScores.map((hs: any) => (
                 <TableRow key={hs.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -149,8 +150,21 @@ const HealthScoreList: React.FC = () => {
                       <span className={`font-bold ${getScoreColor(hs.score)}`}>{hs.score}</span>
                     </div>
                   </TableCell>
-                  <TableCell>{hs.npsScore ?? '-'}</TableCell>
-                  <TableCell>{hs.csatScore ?? '-'}</TableCell>
+                  <TableCell>
+                    <span className={hs.npsScore >= 9 ? 'text-green-600 font-medium' : hs.npsScore >= 7 ? 'text-blue-600' : hs.npsScore ? 'text-amber-600' : 'text-slate-400'}>
+                      {hs.npsScore ?? '-'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={hs.csatScore >= 4 ? 'text-green-600 font-medium' : hs.csatScore >= 3 ? 'text-blue-600' : hs.csatScore ? 'text-amber-600' : 'text-slate-400'}>
+                      {hs.csatScore ?? '-'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={hs.cesScore >= 6 ? 'text-green-600 font-medium' : hs.cesScore >= 4 ? 'text-blue-600' : hs.cesScore ? 'text-amber-600' : 'text-slate-400'}>
+                      {hs.cesScore ?? '-'}
+                    </span>
+                  </TableCell>
                   <TableCell>{hs.engagementScore ?? '-'}</TableCell>
                   <TableCell><Badge variant={getRiskBadgeVariant(hs.riskLevel)}>{hs.riskLevel.replace('_', ' ')}</Badge></TableCell>
                 </TableRow>
