@@ -28,6 +28,8 @@ import {
   getDealStageBadgeVariant,
 } from '../../components/ui';
 import CompanyModal from './CompanyModal';
+import ContactModal from '../contacts/ContactModal';
+import DealModal from '../deals/DealModal';
 import ActivityFeed from '../../components/activity/ActivityFeed';
 
 const CompanyDetail: React.FC = () => {
@@ -279,6 +281,28 @@ const CompanyDetail: React.FC = () => {
         onClose={() => dispatch(openModal({ type: null, mode: null }))}
         mode={modal.mode}
         company={modal.data}
+      />
+
+      <ContactModal
+        isOpen={modal.type === 'contact'}
+        onClose={() => {
+          dispatch(openModal({ type: null, mode: null }));
+          if (id) dispatch(fetchCompany(id));
+        }}
+        mode={modal.mode}
+        contact={modal.mode === 'edit' ? modal.data : null}
+        initialData={modal.mode === 'create' ? { companyId: currentCompany.id } : undefined}
+      />
+
+      <DealModal
+        isOpen={modal.type === 'deal'}
+        onClose={() => {
+          dispatch(openModal({ type: null, mode: null }));
+          if (id) dispatch(fetchCompany(id));
+        }}
+        mode={modal.mode}
+        deal={modal.mode === 'edit' ? modal.data : null}
+        initialData={modal.mode === 'create' ? { companyId: currentCompany.id } : undefined}
       />
 
       <ConfirmModal

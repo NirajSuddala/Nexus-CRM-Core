@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, CheckSquare, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, Search, CheckSquare, Calendar, AlertCircle, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchTasks, updateTask } from '../../features/tasksSlice';
@@ -36,6 +36,15 @@ const TaskList: React.FC = () => {
     dispatch(fetchTasks({ page, limit: 20, search: search || undefined, status: status || undefined, priority: priority || undefined }));
   }, [dispatch, page, search, status, priority]);
 
+  const hasFilters = search || status || priority;
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatus('');
+    setPriority('');
+    setPage(1);
+  };
+
   const handleToggleComplete = async (taskId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'completed' ? 'todo' : 'completed';
     try {
@@ -60,10 +69,25 @@ const TaskList: React.FC = () => {
 
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
-          <div className="flex gap-4">
-            <div className="flex-1 max-w-md"><Input placeholder="Search tasks..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} /></div>
-            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
-            <Select options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <Input placeholder="Search tasks..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
+            </div>
+            <div className="w-36">
+              <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            </div>
+            <div className="w-36">
+              <Select options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
+            </div>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
           </div>
         </div>
 

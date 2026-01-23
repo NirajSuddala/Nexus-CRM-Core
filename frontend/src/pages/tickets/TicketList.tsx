@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Ticket, AlertCircle } from 'lucide-react';
+import { Plus, Search, Ticket, AlertCircle, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchTickets } from '../../features/ticketsSlice';
@@ -81,6 +81,16 @@ const TicketList: React.FC = () => {
     dispatch(fetchTickets({ page, limit: 20, search: search || undefined, status: status || undefined, type: type || undefined, priority: priority || undefined }));
   }, [dispatch, page, search, status, type, priority]);
 
+  const hasFilters = search || status || type || priority;
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatus('');
+    setType('');
+    setPriority('');
+    setPage(1);
+  };
+
   const isOverdue = (dueDate: string | undefined, ticketStatus: string) => {
     if (!dueDate || ticketStatus === 'resolved' || ticketStatus === 'closed') return false;
     return new Date(dueDate) < new Date(new Date().toDateString());
@@ -100,13 +110,28 @@ const TicketList: React.FC = () => {
 
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
-          <div className="flex gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px] max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
               <Input placeholder="Search tickets..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
-            <Select options={TYPE_OPTIONS} value={type} onChange={setType} />
-            <Select options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
+            <div className="w-40">
+              <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            </div>
+            <div className="w-40">
+              <Select options={TYPE_OPTIONS} value={type} onChange={setType} />
+            </div>
+            <div className="w-36">
+              <Select options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
+            </div>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
           </div>
         </div>
 

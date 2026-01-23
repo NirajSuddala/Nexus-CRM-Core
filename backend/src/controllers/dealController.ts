@@ -331,18 +331,42 @@ export const updateDealStage = async (
       if (index === -1) {
         throw new AppError('Deal not found', 404);
       }
-      const previousStageId = demoDeals[index].stageId;
+
+      // Map stage to stageName for display
+      const stageNameMap: Record<string, string> = {
+        discovery: 'Discovery',
+        proposal: 'Proposal',
+        negotiation: 'Negotiation',
+        closed_won: 'Closed Won',
+        closed_lost: 'Closed Lost',
+      };
+
+      // Find current stage key from stageName
+      const currentStageName = demoDeals[index].stageName;
+      const currentStageKey = Object.entries(stageNameMap).find(
+        ([_, name]) => name === currentStageName
+      )?.[0] || 'discovery';
+
+      const newStage = req.body.stage;
+      const newStageName = stageNameMap[newStage] || 'Discovery';
+
+      // Update the deal
       demoDeals[index] = {
         ...demoDeals[index],
-        stageId: req.body.stageId,
+        stageName: newStageName,
+        stage: newStage,
         updatedAt: new Date().toISOString()
       };
+
       // Update demoDealsByStage - remove from old stage and add to new stage
-      demoDealsByStage[previousStage] = demoDealsByStage[previousStage].filter(d => d.id !== req.params.id);
-      if (demoDealsByStage[req.body.stage]) {
-        demoDealsByStage[req.body.stage].unshift(demoDeals[index]);
+      if (demoDealsByStage[currentStageKey]) {
+        demoDealsByStage[currentStageKey] = demoDealsByStage[currentStageKey].filter((d: any) => d.id !== req.params.id);
       }
-      res.json(demoDeals[index]);
+      if (demoDealsByStage[newStage]) {
+        demoDealsByStage[newStage].unshift(demoDeals[index]);
+      }
+
+      res.json({ ...demoDeals[index], stage: newStage });
       return;
     }
 

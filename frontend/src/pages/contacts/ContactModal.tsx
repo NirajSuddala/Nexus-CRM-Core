@@ -23,6 +23,7 @@ interface ContactModalProps {
   onClose: () => void;
   mode: 'create' | 'edit' | 'view' | null;
   contact?: Contact | null;
+  initialData?: { companyId?: string };
 }
 
 const LIFECYCLE_OPTIONS = [
@@ -32,7 +33,7 @@ const LIFECYCLE_OPTIONS = [
   { value: 'customer', label: 'Customer' },
 ];
 
-const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, contact }) => {
+const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, contact, initialData }) => {
   const dispatch = useAppDispatch();
   const { isLoading } = useAppSelector((state) => state.contacts);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -79,11 +80,11 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose, mode, cont
         email: '',
         phone: '',
         jobTitle: '',
-        companyId: '',
+        companyId: initialData?.companyId || '',
         lifecycleStage: 'lead',
       });
     }
-  }, [contact, mode, reset]);
+  }, [contact, mode, reset, initialData]);
 
   const onSubmit = async (data: ContactFormData) => {
     try {

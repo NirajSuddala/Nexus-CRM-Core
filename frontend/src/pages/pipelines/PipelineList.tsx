@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, GitBranch, Settings } from 'lucide-react';
+import { Plus, Search, GitBranch, Settings, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchPipelines } from '../../features/pipelinesSlice';
 import { openModal } from '../../features/uiSlice';
@@ -38,6 +38,14 @@ const PipelineList: React.FC = () => {
     dispatch(fetchPipelines({ page, limit: 20, type: type || undefined }));
   }, [dispatch, page, type]);
 
+  const hasFilters = search || type;
+
+  const clearFilters = () => {
+    setSearch('');
+    setType('');
+    setPage(1);
+  };
+
   const filteredPipelines = search
     ? pipelines.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     : pipelines;
@@ -56,11 +64,22 @@ const PipelineList: React.FC = () => {
 
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
-          <div className="flex gap-4">
-            <div className="flex-1 max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
               <Input placeholder="Search pipelines..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={TYPE_OPTIONS} value={type} onChange={setType} />
+            <div className="w-36">
+              <Select options={TYPE_OPTIONS} value={type} onChange={setType} />
+            </div>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
           </div>
         </div>
 

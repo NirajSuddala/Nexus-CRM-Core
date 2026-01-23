@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, FolderKanban, Calendar, LayoutGrid } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, LayoutGrid, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchProjects } from '../../features/projectsSlice';
@@ -53,6 +53,15 @@ const ProjectList: React.FC = () => {
     ...pipelines.map((p) => ({ value: p.id, label: p.name }))
   ];
 
+  const hasFilters = search || status || pipelineId;
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatus('');
+    setPipelineId('');
+    setPage(1);
+  };
+
   const filteredProjects = pipelineId
     ? projects.filter((p) => p.pipelineId === pipelineId)
     : projects;
@@ -68,7 +77,7 @@ const ProjectList: React.FC = () => {
           <Button
             variant="outline"
             leftIcon={<LayoutGrid className="w-4 h-4" />}
-            onClick={() => navigate('/projects')}
+            onClick={() => navigate('/projects/kanban')}
           >
             Kanban View
           </Button>
@@ -80,12 +89,25 @@ const ProjectList: React.FC = () => {
 
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
-          <div className="flex gap-4">
-            <div className="flex-1 max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
               <Input placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={pipelineOptions} value={pipelineId} onChange={setPipelineId} />
-            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            <div className="w-40">
+              <Select options={pipelineOptions} value={pipelineId} onChange={setPipelineId} />
+            </div>
+            <div className="w-36">
+              <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            </div>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
           </div>
         </div>
 

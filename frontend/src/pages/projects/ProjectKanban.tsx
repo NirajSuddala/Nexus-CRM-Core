@@ -172,7 +172,7 @@ const ProjectKanban: React.FC = () => {
           <Button
             variant="outline"
             leftIcon={<List className="w-4 h-4" />}
-            onClick={() => navigate('/projects/list')}
+            onClick={() => navigate('/projects')}
           >
             List View
           </Button>

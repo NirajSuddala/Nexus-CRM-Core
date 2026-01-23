@@ -24,6 +24,7 @@ interface DealModalProps {
   onClose: () => void;
   mode: 'create' | 'edit' | 'view' | null;
   deal?: Deal | null;
+  initialData?: { companyId?: string; contactId?: string };
 }
 
 const STAGE_OPTIONS = [
@@ -34,7 +35,7 @@ const STAGE_OPTIONS = [
   { value: 'closed_lost', label: 'Closed Lost' },
 ];
 
-const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal }) => {
+const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal, initialData }) => {
   const dispatch = useAppDispatch();
   const { isLoading } = useAppSelector((state) => state.deals);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -103,11 +104,11 @@ const DealModal: React.FC<DealModalProps> = ({ isOpen, onClose, mode, deal }) =>
         stage: 'discovery',
         closeDate: '',
         probability: '',
-        companyId: '',
-        contactId: '',
+        companyId: initialData?.companyId || '',
+        contactId: initialData?.contactId || '',
       });
     }
-  }, [deal, mode, reset]);
+  }, [deal, mode, reset, initialData]);
 
   const onSubmit = async (data: DealFormData) => {
     try {

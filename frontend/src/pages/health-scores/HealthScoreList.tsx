@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Activity, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { Search, Activity, TrendingUp, TrendingDown, AlertTriangle, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchHealthScores, fetchHealthScoreStats } from '../../features/healthScoresSlice';
 import { Input, Select, Card, Table, TableHead, TableBody, TableRow, TableHeader, TableCell, Pagination, Badge } from '../../components/ui';
@@ -40,6 +40,14 @@ const HealthScoreList: React.FC = () => {
     dispatch(fetchHealthScores({ page, limit: 20, riskLevel: riskLevel || undefined }));
     dispatch(fetchHealthScoreStats());
   }, [dispatch, page, riskLevel]);
+
+  const hasFilters = search || riskLevel;
+
+  const clearFilters = () => {
+    setSearch('');
+    setRiskLevel('');
+    setPage(1);
+  };
 
   const filteredScores = search
     ? healthScores.filter((h) => h.company?.name?.toLowerCase().includes(search.toLowerCase()))
@@ -106,11 +114,22 @@ const HealthScoreList: React.FC = () => {
 
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
-          <div className="flex gap-4">
-            <div className="flex-1 max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
               <Input placeholder="Search by company..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={RISK_LEVEL_OPTIONS} value={riskLevel} onChange={setRiskLevel} />
+            <div className="w-40">
+              <Select options={RISK_LEVEL_OPTIONS} value={riskLevel} onChange={setRiskLevel} />
+            </div>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
           </div>
         </div>
 

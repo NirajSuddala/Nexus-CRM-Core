@@ -61,8 +61,8 @@ const AppRoutes: React.FC = () => {
         <Route path="tasks/:id" element={<TaskDetail />} />
 
         {/* Projects */}
-        <Route path="projects" element={<ProjectKanban />} />
-        <Route path="projects/list" element={<ProjectList />} />
+        <Route path="projects" element={<ProjectList />} />
+        <Route path="projects/kanban" element={<ProjectKanban />} />
         <Route path="projects/:id" element={<ProjectDetail />} />
 
         {/* Tickets */}

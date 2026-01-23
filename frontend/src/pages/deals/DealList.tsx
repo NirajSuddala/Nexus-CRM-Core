@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, LayoutGrid, DollarSign } from 'lucide-react';
+import { Plus, Search, LayoutGrid, DollarSign, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchDeals } from '../../features/dealsSlice';
@@ -32,6 +32,14 @@ const DealList: React.FC = () => {
     dispatch(fetchDeals({ page, limit: 20, search: search || undefined, stage: stage || undefined }));
   }, [dispatch, page, search, stage]);
 
+  const hasFilters = search || stage;
+
+  const clearFilters = () => {
+    setSearch('');
+    setStage('');
+    setPage(1);
+  };
+
   const formatCurrency = (value: number | null) => {
     if (!value) return '-';
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value);
@@ -52,12 +60,23 @@ const DealList: React.FC = () => {
 
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
-          <form className="flex gap-4">
-            <div className="flex-1 max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
               <Input placeholder="Search deals..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={STAGE_OPTIONS} value={stage} onChange={setStage} />
-          </form>
+            <div className="w-36">
+              <Select options={STAGE_OPTIONS} value={stage} onChange={setStage} />
+            </div>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         <Table>

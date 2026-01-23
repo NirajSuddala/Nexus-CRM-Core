@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Mail, ArrowRight } from 'lucide-react';
+import { Plus, Search, Mail, ArrowRight, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchEmailSequences } from '../../features/emailSequencesSlice';
 import { openModal } from '../../features/uiSlice';
@@ -36,6 +36,14 @@ const EmailSequenceList: React.FC = () => {
     dispatch(fetchEmailSequences({ page, limit: 20, status: status || undefined }));
   }, [dispatch, page, status]);
 
+  const hasFilters = search || status;
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatus('');
+    setPage(1);
+  };
+
   const filteredSequences = search
     ? sequences.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
     : sequences;
@@ -54,11 +62,22 @@ const EmailSequenceList: React.FC = () => {
 
       <Card padding="none">
         <div className="p-4 border-b border-slate-200">
-          <div className="flex gap-4">
-            <div className="flex-1 max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
               <Input placeholder="Search sequences..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
-            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            <div className="w-32">
+              <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            </div>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
           </div>
         </div>
 
