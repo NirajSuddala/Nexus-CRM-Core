@@ -14,7 +14,7 @@ interface Pipeline {
   id: string;
   name: string;
   description?: string;
-  type: 'onboarding' | 'delivery' | 'support' | 'custom';
+  type: 'sales' | 'onboarding' | 'delivery' | 'support' | 'custom';
   isDefault: boolean;
   stages?: PipelineStage[];
   createdAt: string;

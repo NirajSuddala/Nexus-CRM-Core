@@ -41,7 +41,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
       {/* Column Header */}
       <div className="p-3 border-b border-slate-200">
         <div className="flex items-center gap-2 mb-1">
-          <div className={`w-3 h-3 rounded-full ${color}`}></div>
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></div>
           <h3 className="font-semibold text-slate-900">{label}</h3>
           <span className="ml-auto text-sm text-slate-500">
             {deals.length}

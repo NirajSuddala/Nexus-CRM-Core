@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DndContext,
@@ -13,6 +13,7 @@ import {
 import { Plus, List } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchDealsByStage, updateDealStage, moveDealToStage } from '../../features/dealsSlice';
+import { fetchPipelines } from '../../features/pipelinesSlice';
 import { openModal, addNotification } from '../../features/uiSlice';
 import { subscribeToDealUpdates, unsubscribeFromDealUpdates } from '../../services/socket';
 import { Button } from '../../components/ui';
@@ -21,18 +22,29 @@ import DealCard from './DealCard';
 import DealModal from './DealModal';
 import DroppableColumn from './DroppableColumn';
 
-const STAGES: { key: DealStage; label: string; color: string }[] = [
-  { key: 'discovery', label: 'Discovery', color: 'bg-slate-500' },
-  { key: 'proposal', label: 'Proposal', color: 'bg-blue-500' },
-  { key: 'negotiation', label: 'Negotiation', color: 'bg-amber-500' },
-  { key: 'closed_won', label: 'Closed Won', color: 'bg-green-500' },
-  { key: 'closed_lost', label: 'Closed Lost', color: 'bg-red-500' },
+// Map stage names to DealStage keys
+const stageNameToKey: Record<string, DealStage> = {
+  Discovery: 'discovery',
+  Proposal: 'proposal',
+  Negotiation: 'negotiation',
+  'Closed Won': 'closed_won',
+  'Closed Lost': 'closed_lost',
+};
+
+// Fallback stages when pipeline data isn't available
+const FALLBACK_STAGES: { key: DealStage; label: string; color: string }[] = [
+  { key: 'discovery', label: 'Discovery', color: '#64748b' },
+  { key: 'proposal', label: 'Proposal', color: '#3b82f6' },
+  { key: 'negotiation', label: 'Negotiation', color: '#f59e0b' },
+  { key: 'closed_won', label: 'Closed Won', color: '#22c55e' },
+  { key: 'closed_lost', label: 'Closed Lost', color: '#ef4444' },
 ];
 
 const DealKanban: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { dealsByStage, isLoading } = useAppSelector((state) => state.deals);
+  const { pipelines } = useAppSelector((state) => state.pipelines);
   const { modal } = useAppSelector((state) => state.ui);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [activeDeal, setActiveDeal] = React.useState<Deal | null>(null);
@@ -45,8 +57,25 @@ const DealKanban: React.FC = () => {
     })
   );
 
+  // Get stages from the Sales Pipeline
+  const STAGES = useMemo(() => {
+    const salesPipeline = pipelines.find((p) => p.type === 'sales');
+    if (salesPipeline?.stages && salesPipeline.stages.length > 0) {
+      return salesPipeline.stages
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((stage) => ({
+          key: stageNameToKey[stage.name] || (stage.name.toLowerCase().replace(/\s+/g, '_') as DealStage),
+          label: stage.name,
+          color: stage.color || '#64748b',
+        }));
+    }
+    return FALLBACK_STAGES;
+  }, [pipelines]);
+
   useEffect(() => {
     dispatch(fetchDealsByStage());
+    dispatch(fetchPipelines({ type: 'sales' }));
 
     // Subscribe to real-time updates
     subscribeToDealUpdates((data) => {

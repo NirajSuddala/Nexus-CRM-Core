@@ -20,8 +20,15 @@ export const getPipelines = async (
       }
       const total = filtered.length;
       const paginatedPipelines = filtered.slice((page - 1) * limit, page * limit);
+      // Include stages for each pipeline
+      const pipelinesWithStages = paginatedPipelines.map(pipeline => ({
+        ...pipeline,
+        stages: demoPipelineStages
+          .filter(s => s.pipelineId === pipeline.id)
+          .sort((a, b) => a.sortOrder - b.sortOrder),
+      }));
       res.json({
-        pipelines: paginatedPipelines,
+        pipelines: pipelinesWithStages,
         pagination: { page, limit, total, pages: Math.ceil(total / limit) },
       });
       return;

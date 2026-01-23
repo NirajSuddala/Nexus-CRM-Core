@@ -7,8 +7,11 @@ import {
   deleteTicket,
   getTicketStats,
 } from '../controllers/ticketController';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
+
+router.use(authenticate);
 
 router.get('/', getTickets);
 router.get('/stats', getTicketStats);

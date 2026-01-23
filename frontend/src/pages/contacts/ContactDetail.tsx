@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft, User, Mail, Phone, Building2, Briefcase, Edit, Trash2, Plus, FileText, CheckSquare
+  ArrowLeft, User, Mail, Phone, Building2, Briefcase, Edit, Trash2, Plus, FileText, CheckSquare, Ticket
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchContact, deleteContact, clearCurrentContact } from '../../features/contactsSlice';
 import { openModal, addNotification } from '../../features/uiSlice';
-import { notesApi } from '../../services/api';
+import { notesApi, ticketsApi } from '../../services/api';
 import {
   Button, Card, CardHeader, CardTitle, CardContent, Badge, ConfirmModal, Textarea,
-  getLifecycleBadgeVariant, getDealStageBadgeVariant, getTaskStatusBadgeVariant
+  getLifecycleBadgeVariant, getDealStageBadgeVariant, getTaskStatusBadgeVariant, getTicketStatusBadgeVariant
 } from '../../components/ui';
 import ContactModal from './ContactModal';
 import TaskModal from '../tasks/TaskModal';
@@ -25,10 +25,15 @@ const ContactDetail: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const [tickets, setTickets] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchContact(id));
+      // Fetch tickets for this contact
+      ticketsApi.getAll({ contactId: id }).then((res) => {
+        setTickets(res.data.tickets || []);
+      }).catch(() => setTickets([]));
     }
     return () => {
       dispatch(clearCurrentContact());
@@ -198,6 +203,33 @@ const ContactDetail: React.FC = () => {
                         <p className="text-sm text-slate-500">{task.dueDate && format(new Date(task.dueDate), 'MMM d')}</p>
                       </div>
                       <Badge variant={getTaskStatusBadgeVariant(task.status)}>{task.status.replace('_', ' ')}</Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tickets */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Ticket className="w-5 h-5" />Tickets ({tickets.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {tickets.length === 0 ? (
+                <p className="text-slate-500 text-center py-4">No tickets yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {tickets.map((ticket) => (
+                    <Link key={ticket.id} to={`/tickets/${ticket.id}`} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50">
+                      <div>
+                        <p className="font-medium text-slate-900">{ticket.title}</p>
+                        <p className="text-sm text-slate-500">
+                          {ticket.type.replace('_', ' ')}
+                          {ticket.creator && ` · Created by ${ticket.creator.firstName || 'Demo'} ${ticket.creator.lastName || 'User'}`}
+                        </p>
+                      </div>
+                      <Badge variant={getTicketStatusBadgeVariant(ticket.status)}>{ticket.status.replace(/_/g, ' ')}</Badge>
                     </Link>
                   ))}
                 </div>

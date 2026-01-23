@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Clock, Plus, Edit, Trash2, ArrowRight, FileText } from 'lucide-react';
+import { Clock, Plus, Edit, Trash2, ArrowRight, FileText, Ticket } from 'lucide-react';
 import api from '../../services/api';
 import { Activity, EntityType } from '../../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui';
@@ -22,6 +22,8 @@ const getActionIcon = (action: string) => {
       return <ArrowRight className="w-4 h-4 text-purple-500" />;
     case 'note_added':
       return <FileText className="w-4 h-4 text-amber-500" />;
+    case 'ticket_created':
+      return <Ticket className="w-4 h-4 text-orange-500" />;
     default:
       return <Clock className="w-4 h-4 text-slate-400" />;
   }
@@ -34,18 +36,24 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ entityType, entityId }) => 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const response = await api.get('/reports/activity-log', {
-          params: {
-            entityType,
-            range: 'last90days',
-            limit: 20,
-          },
-        });
-        // Filter activities for this specific entity
-        const filtered = response.data.data.filter(
-          (a: Activity) => a.entityId === entityId
-        );
-        setActivities(filtered);
+        // Build params based on entity type
+        const params: Record<string, string | number> = {
+          range: 'last90days',
+          limit: 20,
+        };
+
+        // Pass the specific entity ID so backend can filter properly
+        if (entityType === 'contact') {
+          params.contactId = entityId;
+        } else if (entityType === 'company') {
+          params.companyId = entityId;
+        } else if (entityType === 'deal') {
+          params.dealId = entityId;
+        }
+
+        const response = await api.get('/reports/activity-log', { params });
+        // Backend already filters by contactId/companyId, so use all results
+        setActivities(response.data.data || []);
       } catch (error) {
         console.error('Failed to fetch activities:', error);
       } finally {

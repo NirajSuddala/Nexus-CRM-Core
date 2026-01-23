@@ -103,4 +103,22 @@ export const getTaskStatusBadgeVariant = (status: string): BadgeProps['variant']
   }
 };
 
+// Helper function to get badge variant for ticket status
+export const getTicketStatusBadgeVariant = (status: string): BadgeProps['variant'] => {
+  switch (status) {
+    case 'open':
+      return 'danger';
+    case 'in_progress':
+      return 'info';
+    case 'waiting_on_client':
+      return 'warning';
+    case 'resolved':
+      return 'success';
+    case 'closed':
+      return 'default';
+    default:
+      return 'default';
+  }
+};
+
 export default Badge;

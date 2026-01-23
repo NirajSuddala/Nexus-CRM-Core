@@ -11,11 +11,13 @@ import {
   Edit,
   Trash2,
   Plus,
+  Ticket,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchCompany, deleteCompany, clearCurrentCompany } from '../../features/companiesSlice';
 import { openModal, addNotification } from '../../features/uiSlice';
+import { ticketsApi } from '../../services/api';
 import {
   Button,
   Card,
@@ -26,6 +28,7 @@ import {
   ConfirmModal,
   getLifecycleBadgeVariant,
   getDealStageBadgeVariant,
+  getTicketStatusBadgeVariant,
 } from '../../components/ui';
 import CompanyModal from './CompanyModal';
 import ContactModal from '../contacts/ContactModal';
@@ -39,10 +42,15 @@ const CompanyDetail: React.FC = () => {
   const { currentCompany, isLoading } = useAppSelector((state) => state.companies);
   const { modal } = useAppSelector((state) => state.ui);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [tickets, setTickets] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchCompany(id));
+      // Fetch tickets for this company
+      ticketsApi.getAll({ companyId: id }).then((res) => {
+        setTickets(res.data.tickets || []);
+      }).catch(() => setTickets([]));
     }
     return () => {
       dispatch(clearCurrentCompany());
@@ -260,6 +268,42 @@ const CompanyDetail: React.FC = () => {
                       </div>
                       <Badge variant={getDealStageBadgeVariant(deal.stage)}>
                         {deal.stage.replace('_', ' ')}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tickets */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Ticket className="w-5 h-5" />
+                Tickets ({tickets.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {tickets.length === 0 ? (
+                <p className="text-slate-500 text-center py-4">No tickets yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {tickets.map((ticket) => (
+                    <Link
+                      key={ticket.id}
+                      to={`/tickets/${ticket.id}`}
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                      <div>
+                        <p className="font-medium text-slate-900">{ticket.title}</p>
+                        <p className="text-sm text-slate-500">
+                          {ticket.type.replace('_', ' ')}
+                          {ticket.creator && ` · Created by ${ticket.creator.firstName || 'Demo'} ${ticket.creator.lastName || 'User'}`}
+                        </p>
+                      </div>
+                      <Badge variant={getTicketStatusBadgeVariant(ticket.status)}>
+                        {ticket.status.replace(/_/g, ' ')}
                       </Badge>
                     </Link>
                   ))}

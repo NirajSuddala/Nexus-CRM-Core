@@ -645,6 +645,9 @@ export const getActivityLog = async (
         if (activity.dealId) {
           derivedEntityType = 'deal';
           entityId = activity.dealId;
+        } else if ((activity as any).ticketId) {
+          derivedEntityType = 'ticket';
+          entityId = (activity as any).ticketId;
         } else if (activity.companyId) {
           derivedEntityType = 'company';
           entityId = activity.companyId;
@@ -660,6 +663,7 @@ export const getActivityLog = async (
           'email': 'email_sent',
           'call': 'call_logged',
           'meeting': 'meeting_scheduled',
+          'ticket': 'ticket_created',
         };
 
         return {
