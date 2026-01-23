@@ -11,13 +11,24 @@ export const getNotes = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { contactId, companyId, dealId } = req.query;
+    const { contactId, companyId, dealId, entityType, entityId } = req.query;
+
+    // Resolve entity IDs - support both direct IDs and entityType/entityId format
+    let resolvedContactId = contactId as string | undefined;
+    let resolvedCompanyId = companyId as string | undefined;
+    let resolvedDealId = dealId as string | undefined;
+
+    if (entityType && entityId) {
+      if (entityType === 'contact') resolvedContactId = entityId as string;
+      else if (entityType === 'company') resolvedCompanyId = entityId as string;
+      else if (entityType === 'deal') resolvedDealId = entityId as string;
+    }
 
     if (!isDatabaseConnected) {
       let filtered = demoActivities.filter(a => a.type === 'note');
-      if (contactId) filtered = filtered.filter(a => a.contactId === contactId);
-      if (companyId) filtered = filtered.filter(a => a.companyId === companyId);
-      if (dealId) filtered = filtered.filter(a => a.dealId === dealId);
+      if (resolvedContactId) filtered = filtered.filter(a => a.contactId === resolvedContactId);
+      if (resolvedCompanyId) filtered = filtered.filter(a => a.companyId === resolvedCompanyId);
+      if (resolvedDealId) filtered = filtered.filter(a => a.dealId === resolvedDealId);
       res.json(filtered);
       return;
     }
@@ -25,9 +36,9 @@ export const getNotes = async (
     const { Activity, User } = await import('../models');
 
     const where: any = { type: 'note' };
-    if (contactId) where.contactId = contactId;
-    if (companyId) where.companyId = companyId;
-    if (dealId) where.dealId = dealId;
+    if (resolvedContactId) where.contactId = resolvedContactId;
+    if (resolvedCompanyId) where.companyId = resolvedCompanyId;
+    if (resolvedDealId) where.dealId = resolvedDealId;
 
     const notes = await Activity.findAll({
       where,
@@ -83,19 +94,35 @@ export const createNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { contactId, companyId, dealId, description } = req.body;
+    // Support both old format (contactId, dealId, description) and new format (entityType, entityId, content)
+    const { content, entityType, entityId, contactId, companyId, dealId, description } = req.body;
+
+    // Resolve the description (frontend sends 'content', but we store as 'description')
+    const noteDescription = content || description;
+
+    // Resolve entity IDs - support both direct IDs and entityType/entityId format
+    let resolvedContactId = contactId || null;
+    let resolvedCompanyId = companyId || null;
+    let resolvedDealId = dealId || null;
+
+    if (entityType && entityId) {
+      if (entityType === 'contact') resolvedContactId = entityId;
+      else if (entityType === 'company') resolvedCompanyId = entityId;
+      else if (entityType === 'deal') resolvedDealId = entityId;
+    }
 
     if (!isDatabaseConnected) {
       const newNote = {
         id: `demo-note-${Date.now()}`,
         type: 'note',
-        contactId: contactId || null,
-        companyId: companyId || null,
-        dealId: dealId || null,
+        contactId: resolvedContactId,
+        companyId: resolvedCompanyId,
+        dealId: resolvedDealId,
         taskId: null,
         emailId: null,
         createdBy: 'demo-user-id',
-        description,
+        description: noteDescription,
+        content: noteDescription,
         metadata: null,
         timestamp: new Date().toISOString(),
         createdAt: new Date().toISOString(),
@@ -109,10 +136,10 @@ export const createNote = async (
 
     const note = await Activity.create({
       type: 'note',
-      contactId,
-      companyId,
-      dealId,
-      description,
+      contactId: resolvedContactId,
+      companyId: resolvedCompanyId,
+      dealId: resolvedDealId,
+      description: noteDescription,
       createdBy: req.user?.id || 'system',
       timestamp: new Date(),
     });

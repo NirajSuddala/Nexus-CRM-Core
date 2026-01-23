@@ -8,6 +8,7 @@ import { openModal, addNotification } from '../../features/uiSlice';
 import { notesApi } from '../../services/api';
 import { Button, Card, CardHeader, CardTitle, CardContent, Badge, ConfirmModal, Textarea, getDealStageBadgeVariant } from '../../components/ui';
 import DealModal from './DealModal';
+import TaskModal from '../tasks/TaskModal';
 import ActivityFeed from '../../components/activity/ActivityFeed';
 
 const DealDetail: React.FC = () => {
@@ -134,6 +135,13 @@ const DealDetail: React.FC = () => {
       </div>
 
       <DealModal isOpen={modal.type === 'deal'} onClose={() => dispatch(openModal({ type: null, mode: null }))} mode={modal.mode} deal={modal.data} />
+      <TaskModal
+        isOpen={modal.type === 'task'}
+        onClose={() => dispatch(openModal({ type: null, mode: null }))}
+        mode={modal.mode}
+        task={modal.mode === 'edit' ? modal.data : null}
+        initialData={modal.mode === 'create' ? modal.data : null}
+      />
       <ConfirmModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleDelete}
         title="Delete Deal" message={`Are you sure you want to delete "${currentDeal.name}"?`} confirmText="Delete" variant="danger" />
     </div>

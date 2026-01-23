@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, FolderKanban, Calendar } from 'lucide-react';
+import { Plus, Search, FolderKanban, Calendar, LayoutGrid } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { fetchProjects } from '../../features/projectsSlice';
+import { fetchPipelines } from '../../features/pipelinesSlice';
 import { openModal } from '../../features/uiSlice';
 import { Button, Input, Select, Card, Table, TableHead, TableBody, TableRow, TableHeader, TableCell, Pagination, Badge } from '../../components/ui';
 import ProjectModal from './ProjectModal';
@@ -32,14 +33,29 @@ const ProjectList: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { projects, pagination, isLoading } = useAppSelector((state) => state.projects);
+  const { pipelines } = useAppSelector((state) => state.pipelines);
   const { modal } = useAppSelector((state) => state.ui);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [pipelineId, setPipelineId] = useState('');
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    dispatch(fetchPipelines({ limit: 100 }));
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchProjects({ page, limit: 20, search: search || undefined, status: status || undefined }));
   }, [dispatch, page, search, status]);
+
+  const pipelineOptions = [
+    { value: '', label: 'All Pipelines' },
+    ...pipelines.map((p) => ({ value: p.id, label: p.name }))
+  ];
+
+  const filteredProjects = pipelineId
+    ? projects.filter((p) => p.pipelineId === pipelineId)
+    : projects;
 
   return (
     <div className="space-y-6">
@@ -48,9 +64,18 @@ const ProjectList: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Projects</h1>
           <p className="text-slate-500">Manage client delivery projects</p>
         </div>
-        <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => dispatch(openModal({ type: 'project', mode: 'create' }))}>
-          New Project
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            leftIcon={<LayoutGrid className="w-4 h-4" />}
+            onClick={() => navigate('/projects')}
+          >
+            Kanban View
+          </Button>
+          <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => dispatch(openModal({ type: 'project', mode: 'create' }))}>
+            New Project
+          </Button>
+        </div>
       </div>
 
       <Card padding="none">
@@ -59,6 +84,7 @@ const ProjectList: React.FC = () => {
             <div className="flex-1 max-w-md">
               <Input placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
             </div>
+            <Select options={pipelineOptions} value={pipelineId} onChange={setPipelineId} />
             <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} />
           </div>
         </div>
@@ -68,6 +94,7 @@ const ProjectList: React.FC = () => {
             <TableRow>
               <TableHeader>Project</TableHeader>
               <TableHeader>Company</TableHeader>
+              <TableHeader>Pipeline / Stage</TableHeader>
               <TableHeader>Progress</TableHeader>
               <TableHeader>Target Date</TableHeader>
               <TableHeader>Status</TableHeader>
@@ -75,11 +102,11 @@ const ProjectList: React.FC = () => {
           </TableHead>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8">Loading...</TableCell></TableRow>
-            ) : projects.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">No projects found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+            ) : filteredProjects.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">No projects found</TableCell></TableRow>
             ) : (
-              projects.map((project) => (
+              filteredProjects.map((project) => (
                 <TableRow key={project.id} clickable onClick={() => navigate(`/projects/${project.id}`)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -93,6 +120,18 @@ const ProjectList: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>{project.company?.name || '-'}</TableCell>
+                  <TableCell>
+                    {project.pipeline?.name ? (
+                      <div>
+                        <p className="text-sm text-slate-700">{project.pipeline.name}</p>
+                        {project.stage?.name && (
+                          <p className="text-xs text-slate-500">{project.stage.name}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="w-full max-w-[120px]">
                       <div className="flex items-center gap-2">

@@ -18,6 +18,8 @@ interface Project {
   description?: string;
   companyId: string;
   contactId?: string;
+  pipelineId?: string;
+  stageId?: string;
   status: 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
   startDate?: string;
   targetEndDate?: string;
@@ -27,6 +29,8 @@ interface Project {
   milestones?: Milestone[];
   company?: any;
   contact?: any;
+  pipeline?: any;
+  stage?: any;
   createdAt: string;
   updatedAt: string;
 }

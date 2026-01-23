@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
 import { isDatabaseConnected } from '../config/database';
-import { demoTasks, demoContacts, demoDeals } from '../services/demoData';
+import { demoTasks, demoContacts, demoDeals, demoActivities } from '../services/demoData';
 
 export const getTasks = async (
   req: Request,
@@ -247,6 +247,7 @@ export const createTask = async (
       const newTask = {
         id: `demo-task-${Date.now()}`,
         ...req.body,
+        title: req.body.name || req.body.title,
         status: req.body.status || 'todo',
         priority: req.body.priority || 'medium',
         contact: req.body.contactId ? demoContacts.find(c => c.id === req.body.contactId) : null,
@@ -255,6 +256,24 @@ export const createTask = async (
         updatedAt: new Date().toISOString(),
       };
       demoTasks.push(newTask);
+
+      // Add activity for task creation
+      const newActivity = {
+        id: `demo-activity-${Date.now()}`,
+        type: 'created',
+        contactId: req.body.contactId || null,
+        companyId: null,
+        dealId: req.body.dealId || null,
+        taskId: newTask.id,
+        emailId: null,
+        createdBy: 'demo-user-id',
+        description: `Task "${newTask.title || newTask.name}" was created`,
+        metadata: null,
+        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      demoActivities.push(newActivity as any);
+
       res.status(201).json(newTask);
       return;
     }
@@ -271,7 +290,10 @@ export const createTask = async (
       task.id,
       'created',
       req.user?.id,
-      `Task "${task.title}" was created`
+      `Task "${task.title}" was created`,
+      undefined,
+      task.dealId,
+      task.contactId
     );
 
     const fullTask = await Task.findByPk(task.id, {
@@ -327,7 +349,9 @@ export const updateTask = async (
       'updated',
       req.user?.id,
       `Task "${task.title}" was updated`,
-      { previousData, newData: req.body }
+      { previousData, newData: req.body },
+      task.dealId,
+      task.contactId
     );
 
     const fullTask = await Task.findByPk(task.id, {

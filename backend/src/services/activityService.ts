@@ -140,11 +140,15 @@ export const logTaskActivity = async (
   type: ActivityType,
   createdBy?: string,
   description?: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
+  dealId?: string | null,
+  contactId?: string | null
 ) => {
   return createActivity({
     type,
     taskId,
+    dealId: dealId || null,
+    contactId: contactId || null,
     createdBy: createdBy || 'system',
     description,
     metadata,

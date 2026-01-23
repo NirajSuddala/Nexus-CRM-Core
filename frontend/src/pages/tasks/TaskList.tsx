@@ -120,7 +120,13 @@ const TaskList: React.FC = () => {
         {pagination && <Pagination page={page} totalPages={pagination.pages} totalItems={pagination.total} itemsPerPage={pagination.limit} onPageChange={setPage} />}
       </Card>
 
-      <TaskModal isOpen={modal.type === 'task'} onClose={() => dispatch(openModal({ type: null, mode: null }))} mode={modal.mode} task={modal.data} />
+      <TaskModal
+        isOpen={modal.type === 'task'}
+        onClose={() => dispatch(openModal({ type: null, mode: null }))}
+        mode={modal.mode}
+        task={modal.mode === 'edit' ? modal.data : null}
+        initialData={modal.mode === 'create' ? modal.data : null}
+      />
     </div>
   );
 };

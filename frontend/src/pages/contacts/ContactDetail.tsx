@@ -13,6 +13,7 @@ import {
   getLifecycleBadgeVariant, getDealStageBadgeVariant, getTaskStatusBadgeVariant
 } from '../../components/ui';
 import ContactModal from './ContactModal';
+import TaskModal from '../tasks/TaskModal';
 import ActivityFeed from '../../components/activity/ActivityFeed';
 
 const ContactDetail: React.FC = () => {
@@ -209,6 +210,13 @@ const ContactDetail: React.FC = () => {
       </div>
 
       <ContactModal isOpen={modal.type === 'contact'} onClose={() => dispatch(openModal({ type: null, mode: null }))} mode={modal.mode} contact={modal.data} />
+      <TaskModal
+        isOpen={modal.type === 'task'}
+        onClose={() => dispatch(openModal({ type: null, mode: null }))}
+        mode={modal.mode}
+        task={modal.mode === 'edit' ? modal.data : null}
+        initialData={modal.mode === 'create' ? modal.data : null}
+      />
       <ConfirmModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleDelete}
         title="Delete Contact" message={`Are you sure you want to delete "${currentContact.fullName}"?`} confirmText="Delete" variant="danger" />
     </div>

@@ -13,8 +13,8 @@ const taskSchema = z.object({
   name: z.string().min(1, 'Task name is required'),
   description: z.string().min(1, 'Description is required'),
   dueDate: z.string().min(1, 'Due date is required'),
-  priority: z.enum(['high', 'medium', 'low']),
-  status: z.enum(['todo', 'in_progress', 'completed']),
+  priority: z.enum(['high', 'medium', 'low'], { required_error: 'Priority is required' }),
+  status: z.enum(['todo', 'in_progress', 'completed'], { required_error: 'Status is required' }),
   contactId: z.string().min(1, 'Contact is required'),
   dealId: z.string().min(1, 'Deal is required'),
 });
@@ -24,6 +24,7 @@ interface TaskModalProps {
   onClose: () => void;
   mode: 'create' | 'edit' | 'view' | null;
   task?: Task | null;
+  initialData?: { contactId?: string; dealId?: string } | null;
 }
 
 const PRIORITY_OPTIONS = [
@@ -38,7 +39,14 @@ const STATUS_OPTIONS = [
   { value: 'completed', label: 'Completed' },
 ];
 
-const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) => {
+// Format date to YYYY-MM-DD for HTML date input
+const formatDateForInput = (dateString: string | null): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toISOString().split('T')[0];
+};
+
+const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task, initialData }) => {
   const dispatch = useAppDispatch();
   const { isLoading } = useAppSelector((state) => state.tasks);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -70,16 +78,24 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, mode, task }) =>
       reset({
         name: task.name,
         description: task.description || '',
-        dueDate: task.dueDate || '',
+        dueDate: formatDateForInput(task.dueDate),
         priority: task.priority,
         status: task.status,
         contactId: task.contactId || '',
         dealId: task.dealId || '',
       });
     } else {
-      reset({ name: '', description: '', dueDate: '', priority: 'medium', status: 'todo', contactId: '', dealId: '' });
+      reset({
+        name: '',
+        description: '',
+        dueDate: '',
+        priority: 'medium',
+        status: 'todo',
+        contactId: initialData?.contactId || '',
+        dealId: initialData?.dealId || ''
+      });
     }
-  }, [task, mode, reset]);
+  }, [task, mode, reset, initialData]);
 
   const onSubmit = async (data: TaskFormData) => {
     try {
